@@ -2,6 +2,7 @@ import { invoicesRepository } from './invoices.repository'
 import { brokersRepository } from '../brokers/brokers.repository'
 import { NotFoundError, ValidationError } from '#/lib/errors'
 import { formatInvoiceNumber, invoiceNumberPrefix, sequenceFromInvoiceNumber } from './invoice-number'
+import { roundInvoiceSqft } from '@jg-app/shared'
 
 type InvoiceItemInput = {
   itemType?: string
@@ -138,7 +139,15 @@ export const invoicesService = {
       throw new ValidationError('At least one item is required')
     }
 
-    const totals = calculateTotals(data)
+    const items = data.items.map((item) => {
+      const qty = roundInvoiceSqft(item.qty)
+      return {
+        ...item,
+        qty,
+        amount: round2(qty * item.rate - (item.discountAmount ?? 0)),
+      }
+    })
+    const totals = calculateTotals({ ...data, items })
     const now = new Date()
     const invoiceDate = data.invoiceDate ? new Date(data.invoiceDate) : now
 
@@ -180,7 +189,7 @@ export const invoicesService = {
             remarks: data.transport.remarks,
           }
         : undefined,
-      items: data.items.map((item) => ({
+      items: items.map((item) => ({
         ...item,
         itemType: item.itemType ?? 'PRODUCT',
         amount: itemAmount(item),

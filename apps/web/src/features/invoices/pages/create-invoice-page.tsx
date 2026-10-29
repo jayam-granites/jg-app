@@ -17,6 +17,7 @@ import { useMeasurement } from '@/features/measurements/hooks/use-measurements'
 import { useProducts } from '@/features/products/hooks/use-products'
 import { useTransportProviders, useCreateTransport } from '@/features/transport/hooks/use-transport'
 import { useCreateInvoice } from '../hooks/use-invoices'
+import { roundInvoiceSqft } from '@jg-app/shared'
 
 type InvoiceLine = {
   key: string
@@ -172,7 +173,7 @@ export function CreateInvoicePage() {
           ...variantUnits(product),
           name: group.name,
           slabCount: group.slabCount,
-          sqft: round2(group.sqft),
+          sqft: roundInvoiceSqft(group.sqft),
           rate: productRate(product),
           isLoadingApplicable: true,
         }
@@ -250,7 +251,7 @@ export function CreateInvoicePage() {
 
   function addManualItem() {
     const name = manualName.trim()
-    const sqft = Number(manualSqft) || 0
+    const sqft = roundInvoiceSqft(Number(manualSqft) || 0)
     if (!name || sqft <= 0) return
 
     const product = manualProductId
