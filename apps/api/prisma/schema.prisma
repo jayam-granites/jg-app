@@ -1,0 +1,1193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CategoryType {
+  PRODUCT
+  EXPENSE
+  SERVICE
+  PURCHASE
+}
+
+enum AccountType {
+  CASH
+  UPI
+  BANK_ACCOUNT
+}
+
+enum AccountTransactionType {
+  INVOICE_PAYMENT
+  EXPENSE
+  INITIAL_BALANCE
+  MANUAL_ADJUSTMENT
+}
+
+enum PurchaseStatus {
+  DRAFT
+  APPROVED
+  PARTIAL_RECEIVED
+  COMPLETED
+  CANCELLED
+}
+
+enum ExpenseFrequency {
+  ONE_TIME
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+model Category {
+  id Int @id @default(autoincrement())
+
+  parentId Int? @map("parent_id")
+
+  name String
+
+  type CategoryType
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  parent Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+
+  children Category[] @relation("CategoryHierarchy")
+
+  products Product[]
+
+  attributes CategoryAttribute[]
+
+  expenses Expense[]
+
+  expenseSchedules ExpenseSchedule[]
+
+  @@unique([parentId, name])
+  @@map("categories")
+}
+
+model Unit {
+  id Int @id @default(autoincrement())
+
+  code String @unique
+
+  name String
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  variants ProductVariant[] @relation("PrimaryUnit")
+
+  secondaryVariants ProductVariant[] @relation("SecondaryUnit")
+
+  invoiceItems InvoiceItem[] @relation("InvoiceUnit")
+
+  invoiceSecondaryItems InvoiceItem[] @relation("InvoiceSecondaryUnit")
+
+  @@map("units")
+}
+
+model Product {
+  id Int @id @default(autoincrement())
+
+  categoryId Int @map("category_id")
+
+  name String
+
+  description String?
+
+  hsnCode String? @map("hsn_code")
+
+  lotNumber String? @map("lot_number")
+
+  widthReduction Decimal? @default(0) @map("width_reduction") @db.Decimal(12, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  variants ProductVariant[]
+
+  slabs Slab[]
+
+  @@map("products")
+}
+
+model Slab {
+  id Int @id @default(autoincrement())
+
+  productId Int @map("product_id")
+
+  measurementId Int? @map("measurement_id")
+
+  slabNumber Int @map("slab_number")
+
+  width Decimal @db.Decimal(12, 2)
+
+  height Decimal @db.Decimal(12, 2)
+
+  area Decimal @db.Decimal(12, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  measurement Measurement? @relation(fields: [measurementId], references: [id])
+
+  @@map("slabs")
+}
+
+model Measurement {
+  id Int @id @default(autoincrement())
+
+  measurementNumber String @unique @map("measurement_number")
+
+  name String @default("")
+
+  phone String? @map("phone")
+
+  address String? @map("address")
+
+  notes String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  slabs Slab[]
+
+  @@map("measurements")
+}
+
+model ProductVariant {
+  id Int @id @default(autoincrement())
+
+  productId Int @map("product_id")
+
+  unitId Int @map("unit_id")
+
+  secondaryUnitId Int? @map("secondary_unit_id")
+
+  skuCode String @unique @map("sku_code")
+
+  mrp Decimal @db.Decimal(12, 2)
+
+  sellingPrice Decimal @map("selling_price") @db.Decimal(12, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  product Product @relation(fields: [productId], references: [id])
+
+  unit Unit @relation("PrimaryUnit", fields: [unitId], references: [id])
+
+  secondaryUnit Unit? @relation("SecondaryUnit", fields: [secondaryUnitId], references: [id])
+
+  attributes ProductVariantAttribute[]
+
+  purchaseItems PurchaseOrderItem[]
+
+  receiptItems PurchaseReceiptItem[]
+
+  inventoryBatches InventoryBatch[]
+
+  invoiceItems InvoiceItem[]
+
+  @@map("product_variants")
+}
+
+model Attribute {
+  id Int @id @default(autoincrement())
+
+  code String @unique
+
+  name String
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  categories CategoryAttribute[]
+
+  values AttributeValue[]
+
+  productVariantAttributes ProductVariantAttribute[]
+
+  @@map("attributes")
+}
+
+model CategoryAttribute {
+  id Int @id @default(autoincrement())
+
+  categoryId Int @map("category_id")
+
+  attributeId Int @map("attribute_id")
+
+  isRequired Boolean @default(false) @map("is_required")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  attribute Attribute @relation(fields: [attributeId], references: [id])
+
+  @@unique([categoryId, attributeId])
+  @@map("category_attributes")
+}
+
+model AttributeValue {
+  id Int @id @default(autoincrement())
+
+  attributeId Int @map("attribute_id")
+
+  value String
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  attribute Attribute @relation(fields: [attributeId], references: [id])
+
+  variants ProductVariantAttribute[]
+
+  @@unique([attributeId, value])
+  @@map("attribute_values")
+}
+
+model ProductVariantAttribute {
+  id Int @id @default(autoincrement())
+
+  productVariantId Int @map("product_variant_id")
+
+  attributeId Int @map("attribute_id")
+
+  attributeValueId Int @map("attribute_value_id")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  attribute Attribute @relation(fields: [attributeId], references: [id])
+
+  attributeValue AttributeValue @relation(fields: [attributeValueId], references: [id])
+
+  @@unique([productVariantId, attributeId])
+  @@map("product_variant_attributes")
+}
+
+model Supplier {
+  id Int @id @default(autoincrement())
+
+  name String
+
+  mobile String?
+
+  address String?
+
+  gstNumber String? @map("gst_number")
+
+  bankName String? @map("bank_name") @db.VarChar(255)
+
+  accountNumber String? @unique @map("account_number") @db.VarChar(100)
+
+  ifscCode String? @map("ifsc_code") @db.VarChar(20)
+
+  branchName String? @map("branch_name") @db.VarChar(100)
+
+  upiId String? @map("upi_id") @db.VarChar(100)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id Int @id @default(autoincrement())
+
+  poNumber String @unique @map("po_number")
+
+  supplierId Int @map("supplier_id")
+
+  orderDate DateTime @map("order_date")
+
+  expectedDate DateTime? @map("expected_date")
+
+  status PurchaseStatus @default(DRAFT)
+
+  remarks String?
+
+  subtotal Decimal? @db.Decimal(12, 2)
+
+  totalExpense Decimal? @map("total_expense") @db.Decimal(12, 2)
+
+  grandTotal Decimal? @map("grand_total") @db.Decimal(12, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  items PurchaseOrderItem[]
+
+  receipts PurchaseReceipt[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id Int @id @default(autoincrement())
+
+  purchaseOrderId Int @map("purchase_order_id")
+
+  productVariantId Int @map("product_variant_id")
+
+  orderedQty Decimal @map("ordered_qty") @db.Decimal(12, 3)
+
+  expectedSlabCount Int? @map("expected_slab_count")
+
+  unitPrice Decimal @map("unit_price") @db.Decimal(12, 2)
+
+  amount Decimal @db.Decimal(12, 2)
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  receiptItems PurchaseReceiptItem[]
+
+  @@map("purchase_order_items")
+}
+
+model PurchaseReceipt {
+  id Int @id @default(autoincrement())
+
+  purchaseOrderId Int @map("purchase_order_id")
+
+  receiptNumber String @unique @map("receipt_number")
+
+  vehicleNumber String? @map("vehicle_number")
+
+  invoiceNumber String? @map("invoice_number")
+
+  receivedDate DateTime @map("received_date")
+
+  totalSqfts Decimal? @map("total_sqfts") @db.Decimal(12, 3)
+
+  totalSlabs Int? @map("total_slabs")
+
+  subtotal Decimal? @map("subtotal") @db.Decimal(12, 2)
+
+  adjustment Decimal? @map("adjustment") @db.Decimal(12, 2)
+
+  netTotal Decimal? @map("net_total") @db.Decimal(12, 2)
+
+  gstInvoiceSqft Decimal? @map("gst_invoice_sqft") @db.Decimal(12, 3)
+
+  gstInvoiceRate Decimal? @map("gst_invoice_rate") @db.Decimal(12, 2)
+
+  gstInvoiceBaseValue Decimal? @map("gst_invoice_base_value") @db.Decimal(12, 2)
+
+  gstInvoiceGst Decimal? @map("gst_invoice_gst") @db.Decimal(12, 2)
+
+  gstInvoiceTotal Decimal? @map("gst_invoice_total") @db.Decimal(12, 2)
+
+  cashPortion Decimal? @map("cash_portion") @db.Decimal(12, 2)
+
+  billPayment Decimal? @map("bill_payment") @db.Decimal(12, 2)
+
+  cashPayment Decimal? @map("cash_payment") @db.Decimal(12, 2)
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  items PurchaseReceiptItem[]
+
+  expenses Expense[]
+
+  purchaseTransports PurchaseTransport[]
+
+  @@map("purchase_receipts")
+}
+
+model PurchaseReceiptItem {
+  id Int @id @default(autoincrement())
+
+  purchaseReceiptId Int @map("purchase_receipt_id")
+
+  purchaseOrderItemId Int? @map("purchase_order_item_id")
+
+  productVariantId Int @map("product_variant_id")
+
+  batchNo String @map("batch_no")
+
+  receivedQty Decimal @map("received_qty") @db.Decimal(12, 3)
+
+  slabCount Int? @map("slab_count")
+
+  damagedQty Decimal? @map("damaged_qty") @db.Decimal(12, 3)
+
+  acceptedQty Decimal? @map("accepted_qty") @db.Decimal(12, 3)
+
+  rejectedQty Decimal? @map("rejected_qty") @db.Decimal(12, 3)
+
+  rate Decimal? @map("rate") @db.Decimal(12, 2)
+
+  buyingPrice Decimal @map("buying_price") @db.Decimal(12, 2)
+
+  landingPrice Decimal? @map("landing_price") @db.Decimal(12, 2)
+
+  sellingPriceFrom Decimal? @map("selling_price_from") @db.Decimal(12, 2)
+
+  sellingPriceTo Decimal? @map("selling_price_to") @db.Decimal(12, 2)
+
+  widthAllowance Decimal? @map("width_allowance") @db.Decimal(12, 2)
+
+  heightAllowance Decimal? @map("height_allowance") @db.Decimal(12, 2)
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseReceipt PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id])
+
+  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id])
+
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  slabs PurchaseReceiptSlab[]
+
+  expenseAllocations ExpenseAllocation[]
+
+  inventoryBatch InventoryBatch?
+
+  @@map("purchase_receipt_items")
+}
+
+model PurchaseReceiptSlab {
+  id Int @id @default(autoincrement())
+
+  purchaseReceiptItemId Int @map("purchase_receipt_item_id")
+
+  serialNo String? @map("serial_no")
+
+  length Decimal? @db.Decimal(12, 2)
+
+  width Decimal? @db.Decimal(12, 2)
+
+  thickness Decimal? @db.Decimal(12, 2)
+
+  sqft Decimal? @db.Decimal(12, 3)
+
+  isCrack Boolean @default(false) @map("is_crack")
+
+  isBroken Boolean @default(false) @map("is_broken")
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseReceiptItem PurchaseReceiptItem @relation(fields: [purchaseReceiptItemId], references: [id])
+
+  @@map("purchase_receipt_slabs")
+}
+
+model ExpenseSchedule {
+  id Int @id @default(autoincrement())
+
+  categoryId Int @map("category_id")
+
+  title String
+
+  frequency ExpenseFrequency
+
+  amount Decimal? @db.Decimal(12, 2)
+
+  startDate DateTime @map("start_date")
+
+  endDate DateTime? @map("end_date")
+
+  intervalDays Int? @map("interval_days")
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  expenses Expense[]
+
+  @@map("expense_schedules")
+}
+
+model Expense {
+  id Int @id @default(autoincrement())
+
+  expenseNumber String @unique @map("expense_number")
+
+  expenseDate DateTime @map("expense_date")
+
+  categoryId Int @map("category_id")
+
+  expenseScheduleId Int? @map("expense_schedule_id")
+
+  purchaseReceiptId Int? @map("purchase_receipt_id")
+
+  amount Decimal @db.Decimal(12, 2)
+
+  fromDate DateTime? @map("from_date")
+
+  toDate DateTime? @map("to_date")
+
+  remarks String?
+
+  paymentMode     String? @map("payment_mode")
+  accountId       Int?    @map("account_id")
+  referenceNumber String? @map("reference_number")
+
+  isPurchaseExpense Boolean @default(false) @map("is_purchase_expense")
+
+  isPaid Boolean @default(false) @map("is_paid")
+
+  paidDate DateTime? @map("paid_date")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  expenseSchedule ExpenseSchedule? @relation(fields: [expenseScheduleId], references: [id])
+
+  purchaseReceipt PurchaseReceipt? @relation(fields: [purchaseReceiptId], references: [id])
+
+  allocations ExpenseAllocation[]
+
+  @@map("expenses")
+}
+
+model ExpenseAllocation {
+  id Int @id @default(autoincrement())
+
+  expenseId Int @map("expense_id")
+
+  purchaseReceiptItemId Int @map("purchase_receipt_item_id")
+
+  amount Decimal @db.Decimal(12, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  expense Expense @relation(fields: [expenseId], references: [id])
+
+  purchaseReceiptItem PurchaseReceiptItem @relation(fields: [purchaseReceiptItemId], references: [id])
+
+  @@map("expense_allocations")
+}
+
+model InventoryBatch {
+  id Int @id @default(autoincrement())
+
+  purchaseReceiptItemId Int? @unique @map("purchase_receipt_item_id")
+
+  productVariantId Int @map("product_variant_id")
+
+  batchNo String @map("batch_no")
+
+  slabCount Int? @map("slab_count")
+
+  totalQty Decimal @map("total_qty") @db.Decimal(12, 3)
+
+  availableQty Decimal @map("available_qty") @db.Decimal(12, 3)
+
+  damagedQty Decimal? @map("damaged_qty") @db.Decimal(12, 3)
+
+  buyingPrice Decimal @map("buying_price") @db.Decimal(12, 2)
+
+  landingPrice Decimal @map("landing_price") @db.Decimal(12, 2)
+
+  sellingPriceFrom Decimal? @map("selling_price_from") @db.Decimal(12, 2)
+
+  sellingPriceTo Decimal? @map("selling_price_to") @db.Decimal(12, 2)
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseReceiptItem PurchaseReceiptItem? @relation(fields: [purchaseReceiptItemId], references: [id])
+
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  slabs InventorySlab[]
+
+  invoiceItems InvoiceItem[]
+
+  @@map("inventory_batches")
+}
+
+model InventorySlab {
+  id Int @id @default(autoincrement())
+
+  inventoryBatchId Int @map("inventory_batch_id")
+
+  serialNo String? @unique @map("serial_no")
+
+  length Decimal? @db.Decimal(12, 2)
+
+  width Decimal? @db.Decimal(12, 2)
+
+  thickness Decimal? @db.Decimal(12, 2)
+
+  sqft Decimal? @db.Decimal(12, 3)
+
+  isCrack Boolean @default(false) @map("is_crack")
+
+  crackWidth Decimal? @map("crack_width") @db.Decimal(12, 2)
+
+  crackHeight Decimal? @map("crack_height") @db.Decimal(12, 2)
+
+  crackArea Decimal? @map("crack_area") @db.Decimal(12, 3)
+
+  isSold Boolean @default(false) @map("is_sold")
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  inventoryBatch InventoryBatch @relation(fields: [inventoryBatchId], references: [id])
+
+  invoiceItems InvoiceItem[]
+
+  @@map("inventory_slabs")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  PARTIAL_PAID
+  PAID
+  CANCELLED
+}
+
+enum ItemType {
+  PRODUCT
+  SERVICE
+  CHARGE
+}
+
+model Customer {
+  id Int @id @default(autoincrement())
+
+  name String
+
+  mobile String?
+
+  alternateMobile String? @map("alternate_mobile")
+
+  address String?
+
+  city String?
+
+  state String?
+
+  pincode String?
+
+  gstNumber String? @map("gst_number")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoices Invoice[]
+
+  @@map("customers")
+}
+
+model Invoice {
+  id Int @id @default(autoincrement())
+
+  invoiceNumber String @unique @map("invoice_number")
+
+  customerId Int @map("customer_id")
+
+  invoiceDate DateTime @map("invoice_date")
+
+  dueDate DateTime? @map("due_date")
+
+  status InvoiceStatus @default(PENDING)
+
+  isGst Boolean @default(false) @map("is_gst")
+
+  isHalfGst Boolean @default(false) @map("is_half_gst")
+
+  isTaxInclusive Boolean @default(false) @map("is_tax_inclusive")
+
+  gstPercent Decimal? @map("gst_percent") @db.Decimal(5, 2)
+
+  loadingRate Decimal? @map("loading_rate") @db.Decimal(12, 2)
+
+  loadingAmount Decimal? @map("loading_amount") @db.Decimal(12, 2)
+
+  receivedAmount Decimal? @default(0) @map("received_amount") @db.Decimal(12, 2)
+
+  balanceAmount Decimal? @map("balance_amount") @db.Decimal(12, 2)
+
+  paymentMethod String? @map("payment_method")
+  accountId     Int?    @map("account_id")
+
+  subtotal Decimal? @db.Decimal(12, 2)
+
+  discountAmount Decimal? @map("discount_amount") @db.Decimal(12, 2)
+
+  taxableAmount Decimal? @map("taxable_amount") @db.Decimal(12, 2)
+
+  cgstAmount Decimal? @map("cgst_amount") @db.Decimal(12, 2)
+
+  sgstAmount Decimal? @map("sgst_amount") @db.Decimal(12, 2)
+
+  igstAmount Decimal? @map("igst_amount") @db.Decimal(12, 2)
+
+  totalTaxAmount Decimal? @map("total_tax_amount") @db.Decimal(12, 2)
+
+  roundOffAmount Decimal? @map("round_off_amount") @db.Decimal(12, 2)
+
+  grandTotal Decimal? @map("grand_total") @db.Decimal(12, 2)
+
+  remarks String?
+
+  convertedFromInvoiceId Int? @map("converted_from_invoice_id")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  convertedFromInvoice Invoice? @relation("InvoiceConversion", fields: [convertedFromInvoiceId], references: [id])
+
+  convertedInvoices Invoice[] @relation("InvoiceConversion")
+
+  items InvoiceItem[]
+
+  commissions InvoiceCommission[]
+
+  invoiceTransports InvoiceTransport[]
+
+  payments InvoicePayment[]
+
+  @@index([customerId])
+  @@map("invoices")
+}
+
+model InvoicePayment {
+  id Int @id @default(autoincrement())
+
+  invoiceId Int @map("invoice_id")
+
+  amount Decimal @db.Decimal(12, 2)
+
+  paymentMethod String? @map("payment_method")
+
+  accountId Int? @map("account_id")
+
+  paymentDate DateTime @default(now()) @map("payment_date")
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  account Account? @relation(fields: [accountId], references: [id])
+
+  @@index([invoiceId])
+  @@map("invoice_payments")
+}
+
+model InvoiceItem {
+  id Int @id @default(autoincrement())
+
+  invoiceId Int @map("invoice_id")
+
+  itemType ItemType @map("item_type")
+
+  productVariantId Int? @map("product_variant_id")
+
+  inventoryBatchId Int? @map("inventory_batch_id")
+
+  inventorySlabId Int? @map("inventory_slab_id")
+
+  description String?
+
+  unitId Int? @map("unit_id")
+
+  secondaryUnitId Int? @map("secondary_unit_id")
+
+  qty Decimal @db.Decimal(12, 3)
+
+  slabCount Int? @map("slab_count")
+
+  isLoadingApplicable Boolean @default(true) @map("is_loading_applicable")
+
+  rate Decimal @db.Decimal(12, 2)
+
+  discountAmount Decimal? @map("discount_amount") @db.Decimal(12, 2)
+
+  taxPercent Decimal? @map("tax_percent") @db.Decimal(5, 2)
+
+  taxAmount Decimal? @map("tax_amount") @db.Decimal(12, 2)
+
+  amount Decimal @db.Decimal(12, 2)
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id])
+
+  inventoryBatch InventoryBatch? @relation(fields: [inventoryBatchId], references: [id])
+
+  inventorySlab InventorySlab? @relation(fields: [inventorySlabId], references: [id])
+
+  unit Unit? @relation("InvoiceUnit", fields: [unitId], references: [id])
+
+  secondaryUnit Unit? @relation("InvoiceSecondaryUnit", fields: [secondaryUnitId], references: [id])
+
+  @@index([invoiceId])
+  @@index([productVariantId])
+  @@index([inventoryBatchId])
+  @@index([inventorySlabId])
+  @@index([unitId])
+  @@index([secondaryUnitId])
+  @@map("invoice_items")
+}
+
+model Broker {
+  id Int @id @default(autoincrement())
+
+  name String
+
+  mobile String?
+
+  address String?
+
+  commissionPercent Decimal? @map("commission_percent") @db.Decimal(5, 2)
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoiceCommissions InvoiceCommission[]
+
+  @@map("brokers")
+}
+
+model InvoiceCommission {
+  id Int @id @default(autoincrement())
+
+  invoiceId Int @map("invoice_id")
+
+  brokerId Int @map("broker_id")
+
+  commissionPercent Decimal? @map("commission_percent") @db.Decimal(5, 2)
+
+  commissionAmount Decimal @map("commission_amount") @db.Decimal(12, 2)
+
+  isPaid Boolean @default(false) @map("is_paid")
+
+  paidDate DateTime? @map("paid_date")
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  broker Broker @relation(fields: [brokerId], references: [id])
+
+  @@index([invoiceId])
+  @@index([brokerId])
+  @@map("invoice_commissions")
+}
+
+model TransportProvider {
+  id Int @id @default(autoincrement())
+
+  name String
+
+  mobile String?
+
+  vehicleNumber String? @map("vehicle_number")
+
+  address String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoiceTransports InvoiceTransport[]
+
+  purchaseTransports PurchaseTransport[]
+
+  @@map("transport_providers")
+}
+
+model InvoiceTransport {
+  id Int @id @default(autoincrement())
+
+  invoiceId Int @map("invoice_id")
+
+  transportProviderId Int @map("transport_provider_id")
+
+  transportDate DateTime @map("transport_date")
+
+  vehicleNumber String? @map("vehicle_number")
+
+  fromLocation String? @map("from_location")
+
+  toLocation String? @map("to_location")
+
+  amount Decimal @db.Decimal(12, 2)
+
+  isPaid Boolean @default(false) @map("is_paid")
+
+  paidDate DateTime? @map("paid_date")
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  transportProvider TransportProvider @relation(fields: [transportProviderId], references: [id])
+
+  @@index([invoiceId])
+  @@index([transportProviderId])
+  @@map("invoice_transports")
+}
+
+model PurchaseTransport {
+  id Int @id @default(autoincrement())
+
+  purchaseReceiptId Int @map("purchase_receipt_id")
+
+  transportProviderId Int @map("transport_provider_id")
+
+  transportDate DateTime @map("transport_date")
+
+  vehicleNumber String? @map("vehicle_number")
+
+  fromLocation String? @map("from_location")
+
+  toLocation String? @map("to_location")
+
+  amount Decimal @db.Decimal(12, 2)
+
+  isPaid Boolean @default(false) @map("is_paid")
+
+  paidDate DateTime? @map("paid_date")
+
+  remarks String?
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchaseReceipt PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id])
+
+  transportProvider TransportProvider @relation(fields: [transportProviderId], references: [id])
+
+  @@index([purchaseReceiptId])
+  @@index([transportProviderId])
+  @@map("purchase_transports")
+}
+
+model LookupOption {
+  id Int @id @default(autoincrement())
+
+  group String
+
+  value String
+
+  label String
+
+  color String?
+
+  sortOrder Int @default(0) @map("sort_order")
+
+  isActive Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([group, value])
+  @@map("lookup_options")
+}
+
+model Setting {
+  key String @id
+
+  value String
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model Account {
+  id             Int         @id @default(autoincrement())
+  name           String
+  type           AccountType
+  ownerTag       String?     @map("owner_tag")
+  initialBalance Decimal     @default(0) @map("initial_balance") @db.Decimal(12, 2)
+  currentBalance Decimal     @default(0) @map("current_balance") @db.Decimal(12, 2)
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  transactions AccountTransaction[]
+
+  invoicePayments InvoicePayment[]
+
+  @@map("accounts")
+}
+
+model AccountTransaction {
+  id              Int                    @id @default(autoincrement())
+  accountId       Int                    @map("account_id")
+  type            AccountTransactionType
+  amount          Decimal                @db.Decimal(12, 2)
+  balanceAfter    Decimal                @map("balance_after") @db.Decimal(12, 2)
+  referenceId     String?                @map("reference_id")
+  referenceType   String?                @map("reference_type")
+  note            String?
+  transactionDate DateTime               @default(now()) @map("transaction_date")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  updatedAt       DateTime               @updatedAt @map("updated_at")
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@map("account_transactions")
+}
