@@ -1,12 +1,14 @@
-import { array, minLength, number, object, optional, pipe, string, boolean } from 'valibot'
+import { array, boolean, minLength, minValue, number, object, optional, picklist, pipe, string } from 'valibot'
 
 export const PurchaseReceiptSlabSchema = object({
   serialNo: optional(string()),
-  length: optional(number()),
-  width: optional(number()),
+  length: pipe(number('Height is required'), minValue(0.01, 'Height must be greater than zero')),
+  width: pipe(number('Width is required'), minValue(0.01, 'Width must be greater than zero')),
   thickness: optional(number()),
   sqft: optional(number()),
   isCrack: optional(boolean()),
+  crackWidth: optional(pipe(number(), minValue(0.01, 'Crack width must be greater than zero'))),
+  crackHeight: optional(pipe(number(), minValue(0.01, 'Crack height must be greater than zero'))),
   isBroken: optional(boolean()),
   remarks: optional(string()),
 })
@@ -18,15 +20,17 @@ export type PurchaseReceiptSlabFormData = {
   thickness?: number
   sqft?: number
   isCrack?: boolean
+  crackWidth?: number
+  crackHeight?: number
   isBroken?: boolean
   remarks?: string
 }
 
 export const PurchaseReceiptItemSchema = object({
-  purchaseOrderItemId: optional(number()),
+  purchaseOrderItemId: number('Purchase order item is required'),
   productVariantId: number('Product variant is required'),
   batchNo: optional(string()),
-  receivedQty: number('Received quantity is required'),
+  receivedQty: optional(number()),
   slabCount: optional(number()),
   damagedQty: optional(number()),
   acceptedQty: optional(number()),
@@ -38,15 +42,20 @@ export const PurchaseReceiptItemSchema = object({
   sellingPriceTo: optional(number()),
   widthAllowance: optional(number()),
   heightAllowance: optional(number()),
+  gstInvoiceSqft: optional(pipe(number(), minValue(0, 'GST invoice sqft cannot be negative'))),
+  gstInvoiceRate: optional(pipe(number(), minValue(0, 'GST invoice rate cannot be negative'))),
   remarks: optional(string()),
-  slabs: optional(array(PurchaseReceiptSlabSchema)),
+  slabs: pipe(
+    array(PurchaseReceiptSlabSchema),
+    minLength(1, 'At least one slab measurement is required'),
+  ),
 })
 
 export type PurchaseReceiptItemFormData = {
-  purchaseOrderItemId?: number
+  purchaseOrderItemId: number
   productVariantId: number
   batchNo?: string
-  receivedQty: number
+  receivedQty?: number
   slabCount?: number
   damagedQty?: number
   acceptedQty?: number
@@ -58,8 +67,10 @@ export type PurchaseReceiptItemFormData = {
   sellingPriceTo?: number
   widthAllowance?: number
   heightAllowance?: number
+  gstInvoiceSqft?: number
+  gstInvoiceRate?: number
   remarks?: string
-  slabs?: PurchaseReceiptSlabFormData[]
+  slabs: PurchaseReceiptSlabFormData[]
 }
 
 export const PurchaseReceiptExpenseSchema = object({
@@ -86,8 +97,9 @@ export const CreatePurchaseReceiptSchema = object({
   invoiceNumber: optional(string()),
   receivedDate: optional(string()),
   adjustment: optional(number()),
-  gstInvoiceSqft: optional(number()),
-  gstInvoiceRate: optional(number()),
+  gstCalculationMode: optional(picklist(['OVERALL', 'PRODUCT'])),
+  gstInvoiceSqft: optional(pipe(number(), minValue(0, 'GST invoice sqft cannot be negative'))),
+  gstInvoiceRate: optional(pipe(number(), minValue(0, 'GST invoice rate cannot be negative'))),
   billPayment: optional(number()),
   cashPayment: optional(number()),
   remarks: optional(string()),
@@ -101,6 +113,7 @@ export type CreatePurchaseReceiptFormData = {
   invoiceNumber?: string
   receivedDate?: string
   adjustment?: number
+  gstCalculationMode?: 'OVERALL' | 'PRODUCT'
   gstInvoiceSqft?: number
   gstInvoiceRate?: number
   billPayment?: number

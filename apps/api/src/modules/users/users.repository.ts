@@ -1,24 +1,90 @@
 import { prisma } from '#/lib/prisma'
-import type { User } from '@jg-app/shared'
+import type { AppRole, User } from '@jg-app/shared'
+import { auth } from '#/lib/auth'
 
 export const userRepository = {
-  findAll(): Promise<User[]> {
-    return prisma.user.findMany() as unknown as Promise<User[]>
+  async findAll(): Promise<User[]> {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isSuspended: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { name: 'asc' },
+    })
+    return users.map((user) => ({
+      ...user,
+      role: user.role as AppRole,
+      isSuspended: user.isSuspended,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    }))
   },
 
-  findById(id: string): Promise<User | null> {
-    return prisma.user.findUnique({ where: { id } }) as unknown as Promise<User | null>
+  async findById(id: string): Promise<User | null> {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        isSuspended: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    })
+    if (!user) return null
+    return {
+      ...user,
+      role: user.role as AppRole,
+      isSuspended: user.isSuspended,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    }
   },
 
-  findByEmail(email: string): Promise<User | null> {
-    return prisma.user.findUnique({ where: { email } }) as unknown as Promise<User | null>
+  findByEmail(email: string) {
+    return prisma.user.findUnique({ where: { email }, select: { id: true } })
   },
 
-  create(data: Pick<User, 'name' | 'email'>): Promise<User> {
-    return prisma.user.create({ data }) as unknown as Promise<User>
-  },
+  async create(data: { name: string; email: string; password: string; role: AppRole }): Promise<User> {
+    const context = await auth.$context
+    const password = await context.password.hash(data.password)
+    const user = await context.internalAdapter.createUser(
+      {
+        name: data.name,
+        email: data.email,
+        emailVerified: false,
+        role: data.role,
+      },
+      { method: 'email-password' },
+    )
 
-  delete(id: string): Promise<User> {
-    return prisma.user.delete({ where: { id } }) as unknown as Promise<User>
+    try {
+      await context.internalAdapter.linkAccount({
+        userId: user.id,
+        providerId: 'credential',
+        accountId: user.id,
+        password,
+      })
+    } catch (error) {
+      await prisma.user.delete({ where: { id: user.id } })
+      throw error
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role as AppRole,
+      isSuspended: user.isSuspended,
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
+    }
   },
 }

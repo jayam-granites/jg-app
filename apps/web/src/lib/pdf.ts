@@ -86,9 +86,24 @@ export function generatePdf(options: PdfDocumentOptions & { filename: string }) 
   window.open(doc.output('bloburl'), '_blank')
 }
 
-export function previewPdf(doc: jsPDF) {
-  const bloburl = doc.output('bloburl')
-  window.open(bloburl, '_blank')
+export function previewPdf(doc: jsPDF | Promise<jsPDF>) {
+  if (doc instanceof jsPDF) {
+    const bloburl = doc.output('bloburl')
+    window.open(bloburl, '_blank')
+    return
+  }
+
+  const previewWindow = window.open('', '_blank')
+  void doc
+    .then((pdf) => {
+      const bloburl = pdf.output('bloburl')
+      if (previewWindow) previewWindow.location.href = bloburl.toString()
+      else window.open(bloburl, '_blank')
+    })
+    .catch((error: unknown) => {
+      previewWindow?.close()
+      window.alert(error instanceof Error ? error.message : 'Failed to generate PDF')
+    })
 }
 
 export function downloadPdf(doc: jsPDF, filename: string) {

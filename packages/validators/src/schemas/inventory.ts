@@ -1,4 +1,4 @@
-import { array, boolean, number, object, optional, string } from 'valibot'
+import { array, boolean, minLength, minValue, number, object, optional, pipe, string } from 'valibot'
 
 export const InventorySlabCreateSchema = object({
   serialNo: optional(string()),
@@ -7,6 +7,7 @@ export const InventorySlabCreateSchema = object({
   thickness: optional(number()),
   sqft: optional(number()),
   isCrack: optional(boolean()),
+  isBroken: optional(boolean()),
   crackWidth: optional(number()),
   crackHeight: optional(number()),
   crackArea: optional(number()),
@@ -20,6 +21,7 @@ export type InventorySlabCreateFormData = {
   thickness?: number
   sqft?: number
   isCrack?: boolean
+  isBroken?: boolean
   crackWidth?: number
   crackHeight?: number
   crackArea?: number
@@ -29,16 +31,22 @@ export type InventorySlabCreateFormData = {
 export const CreateInventorySlabSchema = object({
   inventoryBatchId: number('Inventory batch is required'),
   serialNo: optional(string()),
-  length: optional(number()),
-  width: optional(number()),
+  length: pipe(number('Height is required'), minValue(0.01, 'Height must be greater than zero')),
+  width: pipe(number('Width is required'), minValue(0.01, 'Width must be greater than zero')),
   thickness: optional(number()),
   sqft: optional(number()),
   isCrack: optional(boolean()),
+  isBroken: optional(boolean()),
   crackWidth: optional(number()),
   crackHeight: optional(number()),
   crackArea: optional(number()),
   remarks: optional(string()),
 })
+
+export const CreateInventorySlabsSchema = pipe(
+  array(CreateInventorySlabSchema),
+  minLength(1, 'At least one slab is required'),
+)
 
 export const CreateInventoryBatchSchema = object({
   productVariantId: number('Product variant is required'),

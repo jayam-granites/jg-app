@@ -576,6 +576,7 @@ export function ExpensesPage() {
                   id="expense-amount"
                   type="number"
                   step="0.01"
+                  min="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
@@ -601,11 +602,21 @@ export function ExpensesPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="expense-from" className="text-sm font-semibold">From Date</Label>
-                  <Input id="expense-from" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+                  <DatePicker
+                    id="expense-from"
+                    value={fromDate}
+                    onChange={setFromDate}
+                    placeholder="Select start date"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="expense-to" className="text-sm font-semibold">To Date</Label>
-                  <Input id="expense-to" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+                  <DatePicker
+                    id="expense-to"
+                    value={toDate}
+                    onChange={setToDate}
+                    placeholder="Select end date"
+                  />
                 </div>
               </div>
 

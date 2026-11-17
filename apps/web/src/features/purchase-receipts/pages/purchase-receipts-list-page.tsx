@@ -121,7 +121,7 @@ export function PurchaseReceiptsListPage() {
       title="Purchase Receipts"
       description="Record goods received from suppliers"
       action={
-        <Button onClick={() => navigate({ to: '/purchase/receipts/create' })} className="rounded-lg shadow-sm">
+        <Button onClick={() => navigate({ to: '/purchase/receipts/create', search: { purchaseOrderId: undefined } })} className="rounded-lg shadow-sm">
           <Plus className="mr-2 h-4 w-4" /> Create Receipt
         </Button>
       }

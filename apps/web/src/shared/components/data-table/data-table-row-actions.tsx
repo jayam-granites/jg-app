@@ -37,6 +37,7 @@ export function DataTableRowActions<TData>({
             <DropdownMenuItem
               key={idx}
               onClick={() => action.onClick(row)}
+              disabled={action.disabled?.(row)}
               className={cn(
                 'text-xs',
                 action.variant === 'destructive' && 'text-destructive focus:text-destructive',

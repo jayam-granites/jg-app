@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { generateUPIQR } from '@sk-py/upi-qr'
+import { downloadPdf } from '@/lib/pdf'
 import {
   COMPANY,
   CONTENT_WIDTH,
@@ -7,6 +9,7 @@ import {
   LINE,
   MARGIN,
   MUTED,
+  PAGE_HEIGHT,
   PAGE_WIDTH,
   SOFT,
   STRIPE,
@@ -64,7 +67,7 @@ function numberToWords(value: number): string {
   return `${words} Only`
 }
 
-function drawInfo(doc: jsPDF, inv: any, mode: 'invoice' | 'adjusted', startY: number) {
+function drawInfo(doc: jsPDF, inv: any, mode: 'invoice' | 'adjusted' | 'taxInvoice', startY: number) {
   const customer = inv.customer ?? {}
   const transport = inv.invoiceTransports?.[0]
   const vehicleNumber = transport?.vehicleNumber || transport?.transportProvider?.vehicleNumber || inv.vehicleNumber || ''
@@ -75,15 +78,18 @@ function drawInfo(doc: jsPDF, inv: any, mode: 'invoice' | 'adjusted', startY: nu
     { label: 'Invoice Date:', value: formatPdfDate(inv.invoiceDate) },
   ]
 
-  if (mode === 'adjusted' || transport || vehicleNumber) {
+  if (mode !== 'invoice' || transport || vehicleNumber) {
     invoiceRows.push(
       { label: 'Transport Mode:', value: transport || vehicleNumber ? 'By Road' : '-' },
       { label: 'Vehicle No:', value: vehicleNumber || '-' },
     )
   }
 
-  if (mode === 'adjusted') {
-    invoiceRows.push({ label: 'Place of Supply:', value: customer.state || customer.city || '-' })
+  if (mode !== 'invoice') {
+    invoiceRows.push({
+      label: 'Place of Supply:',
+      value: mode === 'taxInvoice' ? customer.state || '—' : customer.state || customer.city || '-',
+    })
   }
 
   drawInfoColumns(
@@ -93,8 +99,8 @@ function drawInfo(doc: jsPDF, inv: any, mode: 'invoice' | 'adjusted', startY: nu
       rows: [
         { label: 'Name:', value: customer.name },
         { label: 'Address:', value: address, wrap: true },
-        ...(mode === 'adjusted'
-          ? [{ label: 'Party GSTIN:', value: customer.gstNumber }]
+        ...(mode !== 'invoice'
+          ? [{ label: 'Party GSTIN:', value: customer.gstNumber || '—' }]
           : []),
         { label: 'Phone:', value: customer.mobile || customer.phone || inv.customerMobile || '-' },
       ],
@@ -106,7 +112,12 @@ function drawInfo(doc: jsPDF, inv: any, mode: 'invoice' | 'adjusted', startY: nu
   )
 }
 
-function drawBankAndTerms(doc: jsPDF, startY: number, showBank: boolean) {
+async function drawBankAndTerms(
+  doc: jsPDF,
+  startY: number,
+  showBank: boolean,
+  payment?: { amount: number; invoiceNumber: string },
+) {
   let y = startY
   if (y > 235) {
     doc.addPage()
@@ -120,6 +131,18 @@ function drawBankAndTerms(doc: jsPDF, startY: number, showBank: boolean) {
     'Goods once sold will not be taken back. Subject to Tiruppur jurisdiction. Payment as per agreed terms.'
 
   if (showBank) {
+    const qr =
+      payment && Number.isFinite(payment.amount) && payment.amount > 0
+        ? (await generateUPIQR({
+            payeeVPA: COMPANY.upiVpa,
+            payeeName: COMPANY.upiName,
+            amount: payment.amount.toFixed(2),
+            transactionNote: `Invoice ${payment.invoiceNumber}`,
+            transactionRef: payment.invoiceNumber,
+            currency: 'INR',
+          })).qr
+        : undefined
+
     doc.rect(MARGIN, y, 100, 34)
     doc.rect(MARGIN + 103, y, CONTENT_WIDTH - 103, 34)
 
@@ -135,6 +158,15 @@ function drawBankAndTerms(doc: jsPDF, startY: number, showBank: boolean) {
     doc.text(`IFSC: ${COMPANY.ifsc}`, MARGIN + 3, y + 21)
     doc.text(`Branch: ${COMPANY.branch}`, MARGIN + 3, y + 26)
     doc.text(`Ph: ${COMPANY.phones}`, MARGIN + 3, y + 31)
+
+    if (qr) {
+      const qrX = MARGIN + 73
+      doc.addImage(qr, 'PNG', qrX, y + 6, 23, 23)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(5.8)
+      doc.setTextColor(...INK)
+      doc.text('Scan to Pay', qrX + 11.5, y + 32, { align: 'center' })
+    }
 
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(8)
@@ -214,6 +246,118 @@ function drawWords(doc: jsPDF, startY: number, text: string) {
   return startY + 5 + (Array.isArray(lines) ? lines.length : 1) * 3.6
 }
 
+function drawInvoiceWords(doc: jsPDF, startY: number, text: string) {
+  const lines = doc.splitTextToSize(text, CONTENT_WIDTH - 8)
+  const height = 14 + (Array.isArray(lines) ? lines.length - 1 : 0) * 3.6
+
+  doc.setFillColor(...SOFT)
+  doc.setDrawColor(...LINE)
+  doc.setLineWidth(0.3)
+  doc.rect(MARGIN, startY, CONTENT_WIDTH, height, 'FD')
+  doc.setDrawColor(...INK)
+  doc.setLineWidth(0.8)
+  doc.line(MARGIN, startY, MARGIN, startY + height)
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.8)
+  doc.setTextColor(...MUTED)
+  doc.text('TOTAL INVOICE AMOUNT IN WORDS', MARGIN + 4, startY + 5)
+  doc.setFontSize(8)
+  doc.setTextColor(...INK)
+  doc.text(lines, MARGIN + 4, startY + 11)
+  doc.setTextColor(0, 0, 0)
+  return startY + height
+}
+
+async function drawInvoicePaymentAndSummary(
+  doc: jsPDF,
+  startY: number,
+  rows: [string, string][],
+  payment: { amount: number; invoiceNumber: string },
+) {
+  const qr =
+    Number.isFinite(payment.amount) && payment.amount > 0
+      ? (await generateUPIQR({
+          payeeVPA: COMPANY.upiVpa,
+          payeeName: COMPANY.upiName,
+          amount: payment.amount.toFixed(2),
+          transactionNote: `Invoice ${payment.invoiceNumber}`,
+          transactionRef: payment.invoiceNumber,
+          currency: 'INR',
+        })).qr
+      : undefined
+
+  let y = startY
+  const headerHeight = 8
+  const paymentWidth = 85
+  const summaryX = MARGIN + paymentWidth
+  const summaryWidth = CONTENT_WIDTH - paymentWidth
+  const estimatedHeight = Math.max(40, headerHeight + rows.length * 8.5)
+  if (y + estimatedHeight > PAGE_HEIGHT - 15) {
+    doc.addPage()
+    y = 24
+  }
+
+  autoTable(doc, {
+    startY: y + headerHeight,
+    margin: { left: summaryX, right: MARGIN, bottom: 16 },
+    body: rows,
+    theme: 'grid',
+    styles: {
+      fontSize: 7.8,
+      cellPadding: 1.7,
+      lineColor: LINE,
+      lineWidth: 0.2,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { cellWidth: 47, halign: 'left', fontStyle: 'bold' },
+      1: { cellWidth: summaryWidth - 47, halign: 'right' },
+    },
+    didParseCell: (data) => {
+      if (data.row.index === rows.length - 1) {
+        data.cell.styles.fontStyle = 'bold'
+        data.cell.styles.fillColor = INK
+        data.cell.styles.textColor = [255, 255, 255]
+      }
+    },
+  })
+
+  const tableEndY = (doc as any).lastAutoTable.finalY
+  const panelHeight = Math.max(40, tableEndY - y)
+
+  doc.setDrawColor(...LINE)
+  doc.setLineWidth(0.3)
+  doc.setFillColor(...SOFT)
+  doc.rect(MARGIN, y, paymentWidth, headerHeight, 'F')
+  doc.rect(summaryX, y, summaryWidth, headerHeight, 'F')
+  doc.rect(MARGIN, y, CONTENT_WIDTH, panelHeight)
+  doc.line(summaryX, y, summaryX, y + panelHeight)
+  doc.line(MARGIN, y + headerHeight, PAGE_WIDTH - MARGIN, y + headerHeight)
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.8)
+  doc.setTextColor(...INK)
+  doc.text('PAYMENT DETAILS (UPI & BANK)', MARGIN + 3, y + 5.3)
+  doc.text('TAX & AMOUNT SUMMARY', summaryX + summaryWidth / 2, y + 5.3, { align: 'center' })
+
+  const detailsX = qr ? MARGIN + 28 : MARGIN + 3
+  if (qr) {
+    doc.addImage(qr, 'PNG', MARGIN + 3, y + 15, 22, 22)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7.1)
+    doc.text('Scan to Pay', detailsX, y + 19.5)
+  }
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.text(`A/c No: ${COMPANY.accountNumber}`, detailsX, y + 25)
+  doc.text(`IFSC: ${COMPANY.ifsc}`, detailsX, y + 30)
+  doc.text(`Branch: ${COMPANY.branch}`, detailsX, y + 35)
+  doc.setTextColor(0, 0, 0)
+
+  return y + panelHeight
+}
+
 function itemHsn(item: any): string {
   return item?.productVariant?.product?.hsnCode || item?.hsnCode || '-'
 }
@@ -274,10 +418,14 @@ const tableStyles = {
   alternateRowStyles: { fillColor: STRIPE },
 }
 
-export function buildInvoicePdf(inv: any): jsPDF {
+export async function buildInvoicePdf(inv: any): Promise<jsPDF> {
   const doc = baseDoc()
-  const infoY = drawCompanyHeader(doc, { showGstin: false })
-  drawInfo(doc, inv, 'invoice', infoY)
+  const infoY = drawCompanyHeader(doc, {
+    showGstin: true,
+    rightTitle: 'TAX INVOICE',
+    rightSubtitle: 'Original for Recipient',
+  })
+  drawInfo(doc, inv, 'taxInvoice', infoY)
 
   const items = inv.items ?? []
   const computedSubtotal = round2(
@@ -288,8 +436,6 @@ export function buildInvoicePdf(inv: any): jsPDF {
   const transportAmount = Number(inv.invoiceTransports?.[0]?.amount ?? 0)
   const roundOffAmount = Number(inv.roundOffAmount ?? 0)
   const grandTotal = Number(inv.grandTotal ?? 0)
-  const totalSlabs = items.reduce((sum: number, item: any) => sum + Number(item.slabCount ?? 0), 0)
-  const totalSqft = items.reduce((sum: number, item: any) => sum + Number(item.qty ?? 0), 0)
 
   autoTable(doc, {
     startY: infoY + 43,
@@ -297,24 +443,14 @@ export function buildInvoicePdf(inv: any): jsPDF {
     body: items.map((item: any, index: number) => [
       index + 1,
       item.description ?? '-',
-      itemHsn(item),
+      itemHsn(item) === '-' ? '—' : itemHsn(item),
       `${Number(item.qty ?? 0).toFixed(2)}${item.unit?.code ? ` ${item.unit.code}` : ''}`,
       item.slabCount && (item.secondaryUnitId || !item.unitId)
         ? `${item.slabCount}${item.secondaryUnit?.code ? ` ${item.secondaryUnit.code}` : ''}`
-        : '-',
+        : '—',
       Number(item.rate ?? 0).toFixed(2),
       Number(item.amount ?? 0).toFixed(2),
     ]),
-    foot: [[
-      '',
-      `Total Units: ${totalSqft.toFixed(2)}   |   Total Secondary: ${totalSlabs}`,
-      '',
-      '',
-      '',
-      '',
-      Number(subtotal).toFixed(2),
-    ]],
-    showFoot: 'lastPage',
     ...tableStyles,
     margin: { top: 20, left: MARGIN, right: MARGIN, bottom: 16 },
     columnStyles: {
@@ -330,7 +466,7 @@ export function buildInvoicePdf(inv: any): jsPDF {
 
   let y = (doc as any).lastAutoTable.finalY + 5
   const discountAmount = Number(inv.discountAmount ?? 0)
-  const summaryRows: [string, string][] = [['Product Cost', money(subtotal)]]
+  const summaryRows: [string, string][] = [['Total Taxable', money(subtotal)]]
   if (loadingAmount > 0) summaryRows.push(['Loading / Unloading', money(loadingAmount)])
   if (transportAmount > 0) summaryRows.push(['Transport Charges', money(transportAmount)])
   if (discountAmount > 0) summaryRows.push(['Discount', `- ${money(discountAmount)}`])
@@ -342,14 +478,17 @@ export function buildInvoicePdf(inv: any): jsPDF {
   if (Math.abs(roundOffAmount) > 0.001) summaryRows.push(['Round Off', money(roundOffAmount)])
   summaryRows.push(['GRAND TOTAL', money(grandTotal)])
 
-  y = drawSummary(doc, y, summaryRows) + 7
-  y = drawWords(doc, y, numberToWords(grandTotal))
-  drawBankAndTerms(doc, y + 3, false)
-  finalizePdf(doc, { footerLeft: 'This is a computer generated invoice.' })
+  y = drawInvoiceWords(doc, y + 5, numberToWords(grandTotal)) + 5
+  await drawInvoicePaymentAndSummary(doc, y, summaryRows, {
+    amount: grandTotal,
+    invoiceNumber: String(inv.invoiceNumber ?? ''),
+  })
+  finalizePdf(doc, { footerLeft: 'This is a computer generated document.' })
+  doc.setProperties({ title: invoicePdfFilename(inv).replace(/\.pdf$/i, '') })
   return doc
 }
 
-function buildAdjustedBill(inv: any, mode: 'transport' | 'original'): jsPDF {
+async function buildAdjustedBill(inv: any, mode: 'transport' | 'original'): Promise<jsPDF> {
   const doc = baseDoc()
   const infoY = drawCompanyHeader(doc, { showGstin: true })
   drawInfo(doc, inv, 'adjusted', infoY)
@@ -421,15 +560,27 @@ function buildAdjustedBill(inv: any, mode: 'transport' | 'original'): jsPDF {
 
   y = drawSummary(doc, y, summaryRows) + 7
   y = drawWords(doc, y, numberToWords(grandTotal))
-  drawBankAndTerms(doc, y + 3, true)
+  await drawBankAndTerms(doc, y + 3, true, {
+    amount: grandTotal,
+    invoiceNumber: String(inv.invoiceNumber ?? ''),
+  })
   finalizePdf(doc, { footerLeft: 'This is a computer generated document.' })
   return doc
 }
 
-export function buildTransportBillPdf(inv: any): jsPDF {
+export function buildTransportBillPdf(inv: any): Promise<jsPDF> {
   return buildAdjustedBill(inv, 'transport')
 }
 
-export function buildOriginalBillPdf(inv: any): jsPDF {
+export function buildOriginalBillPdf(inv: any): Promise<jsPDF> {
   return buildAdjustedBill(inv, 'original')
+}
+
+export function invoicePdfFilename(inv: any): string {
+  const invoiceNumber = String(inv.invoiceNumber ?? inv.id ?? 'invoice').replace(/[<>:"/\\|?*]/g, '-')
+  return `Tax Invoice - ${COMPANY.upiName} (${invoiceNumber}).pdf`
+}
+
+export async function downloadInvoicePdf(inv: any): Promise<void> {
+  downloadPdf(await buildInvoicePdf(inv), invoicePdfFilename(inv))
 }

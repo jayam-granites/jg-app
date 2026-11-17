@@ -311,6 +311,7 @@ export function ExpenseSchedulesPage() {
                   id="schedule-amount"
                   type="number"
                   step="0.01"
+                  min="0.01"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
@@ -347,6 +348,8 @@ export function ExpenseSchedulesPage() {
                   <Input
                     id="schedule-interval"
                     type="number"
+                    min="1"
+                    step="1"
                     value={intervalDays}
                     onChange={(e) => setIntervalDays(e.target.value)}
                     placeholder="Number of days"

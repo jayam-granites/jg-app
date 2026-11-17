@@ -4,6 +4,8 @@ import {
   formatExpenseNumber,
   sequenceFromExpenseNumber,
 } from '../expenses/expense-number'
+import { SETTINGS_KEYS } from '@jg-app/shared'
+import { calculateReceiptBilling } from '@jg-app/shared'
 
 const purchaseReceiptInclude = {
   purchaseOrder: {
@@ -48,8 +50,16 @@ async function generateBatchNo(tx: any, productVariantId: number): Promise<strin
   return `BAT-${dateStr}-${seq}`
 }
 
-function calcSqft(length: number, width: number): number {
-  return Math.round((length * width) / 144 * 1000) / 1000
+function calcSqft(length: number, width: number, widthAllowance = 0, heightAllowance = 0): number {
+  return Math.round(((length + heightAllowance) * (width + widthAllowance)) / 144 * 1000) / 1000
+}
+
+function calcCrackArea(width: number, height: number): number {
+  return Math.round((width * height) / 144 * 1000) / 1000
+}
+
+function round3(value: number): number {
+  return Math.round(value * 1000) / 1000
 }
 
 function round2(n: number): number {
@@ -84,12 +94,14 @@ export const purchaseReceiptsRepository = {
     invoiceNumber?: string
     receivedDate: Date
     adjustment?: number
+    gstCalculationMode?: 'OVERALL' | 'PRODUCT'
     gstInvoiceSqft?: number
     gstInvoiceRate?: number
     billPayment?: number
     cashPayment?: number
     remarks?: string
     items: {
+      purchaseOrderItemId: number
       productVariantId: number
       batchNo?: string
       receivedQty: number
@@ -104,14 +116,18 @@ export const purchaseReceiptsRepository = {
       sellingPriceTo?: number
       widthAllowance?: number
       heightAllowance?: number
+      gstInvoiceSqft?: number
+      gstInvoiceRate?: number
       remarks?: string
-      slabs?: {
+      slabs: {
         serialNo?: string
         length?: number
         width?: number
         thickness?: number
         sqft?: number
         isCrack?: boolean
+        crackWidth?: number
+        crackHeight?: number
         isBroken?: boolean
         remarks?: string
       }[]
@@ -129,6 +145,8 @@ export const purchaseReceiptsRepository = {
       let totalSqfts = 0
       let totalSlabs = 0
       let receiptSubtotal = 0
+      const lineSubtotals: number[] = []
+      const gstCalculationMode = data.gstCalculationMode ?? 'OVERALL'
 
       const receiptNumber = data.receiptNumber ?? await (async () => {
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -151,6 +169,7 @@ export const purchaseReceiptsRepository = {
           invoiceNumber: data.invoiceNumber ?? null,
           receivedDate: data.receivedDate,
           adjustment: data.adjustment ?? null,
+          gstCalculationMode,
           gstInvoiceSqft: data.gstInvoiceSqft ?? null,
           gstInvoiceRate: data.gstInvoiceRate ?? null,
           billPayment: data.billPayment ?? null,
@@ -171,6 +190,7 @@ export const purchaseReceiptsRepository = {
         const receiptItem = await tx.purchaseReceiptItem.create({
           data: {
             purchaseReceiptId: receipt.id,
+            purchaseOrderItemId: item.purchaseOrderItemId,
             productVariantId: item.productVariantId,
             batchNo,
             receivedQty: item.receivedQty,
@@ -191,10 +211,18 @@ export const purchaseReceiptsRepository = {
         let itemSlabCount = 0
         const createdSlabs: Array<Record<string, any>> = []
 
-        if (item.slabs && item.slabs.length > 0) {
+        if (item.slabs.length > 0) {
           for (let i = 0; i < item.slabs.length; i++) {
             const slab = item.slabs[i]
-            const slabSqft = slab.sqft ?? (slab.length && slab.width ? calcSqft(slab.length, slab.width) : null)
+            const crackArea = slab.isCrack && slab.crackWidth && slab.crackHeight
+              ? calcCrackArea(slab.crackWidth, slab.crackHeight)
+              : null
+            const baseSqft = slab.length && slab.width
+              ? calcSqft(slab.length, slab.width, item.widthAllowance ?? 0, item.heightAllowance ?? 0)
+              : null
+            const slabSqft = baseSqft === null
+              ? null
+              : round3(Math.max(baseSqft - (crackArea ?? 0), 0))
             const serialNo = slab.serialNo ?? null
 
             const createdSlab = await tx.purchaseReceiptSlab.create({
@@ -207,6 +235,9 @@ export const purchaseReceiptsRepository = {
                 sqft: slabSqft,
                 isCrack: slab.isCrack ?? false,
                 isBroken: slab.isBroken ?? false,
+                crackWidth: slab.isCrack ? slab.crackWidth ?? null : null,
+                crackHeight: slab.isCrack ? slab.crackHeight ?? null : null,
+                crackArea,
                 remarks: slab.remarks ?? null,
               },
             })
@@ -226,6 +257,7 @@ export const purchaseReceiptsRepository = {
           ? round2(itemTotalSqft * rate)
           : round2(Number(acceptedQty) * Number(item.buyingPrice))
         receiptSubtotal += itemSubtotal
+        lineSubtotals.push(itemSubtotal)
 
         const inventoryBatch = await tx.inventoryBatch.create({
           data: {
@@ -251,6 +283,11 @@ export const purchaseReceiptsRepository = {
                 width: slab.width,
                 thickness: slab.thickness,
                 sqft: slab.sqft,
+                isCrack: slab.isCrack,
+                isBroken: slab.isBroken,
+                crackWidth: slab.crackWidth,
+                crackHeight: slab.crackHeight,
+                crackArea: slab.crackArea,
                 remarks: slab.remarks,
               },
             })
@@ -267,25 +304,41 @@ export const purchaseReceiptsRepository = {
         itemAllocations[receiptItem.id] = 0
       }
 
-      // Granite billing calculation
       const adjustment = data.adjustment ?? 0
-      const netTotal = round2(receiptSubtotal - adjustment)
+      const gstSetting = await tx.setting.findUnique({
+        where: { key: SETTINGS_KEYS.INVOICE_GST_PERCENT },
+        select: { value: true },
+      })
+      const configuredGstPercentage = Number(gstSetting?.value)
+      const gstPercentage = Number.isFinite(configuredGstPercentage) && configuredGstPercentage >= 0
+        ? configuredGstPercentage
+        : 18
+      const billing = calculateReceiptBilling({
+        mode: gstCalculationMode,
+        lines: data.items.map((item, index) => ({
+          subtotal: lineSubtotals[index],
+          gstInvoiceSqft: item.gstInvoiceSqft,
+          gstInvoiceRate: item.gstInvoiceRate,
+        })),
+        adjustment,
+        gstPercentage,
+        overallGstInvoiceSqft: data.gstInvoiceSqft,
+        overallGstInvoiceRate: data.gstInvoiceRate,
+      })
 
-      const gstInvoiceSqft = data.gstInvoiceSqft ?? 0
-      const gstInvoiceRate = data.gstInvoiceRate ?? 0
-      const gstInvoiceBaseValue = gstInvoiceSqft > 0 && gstInvoiceRate > 0
-        ? round2(gstInvoiceSqft * gstInvoiceRate)
-        : 0
-      const gstInvoiceGst = gstInvoiceBaseValue > 0
-        ? round2(gstInvoiceBaseValue * 0.18)
-        : 0
-      const gstInvoiceTotal = round2(gstInvoiceBaseValue + gstInvoiceGst)
+      if (gstCalculationMode === 'PRODUCT') {
+        for (let index = 0; index < receiptItems.length; index++) {
+          const itemBilling = billing.lines[index]
+          await tx.purchaseReceiptItem.update({
+            where: { id: receiptItems[index].id },
+            data: itemBilling,
+          })
+          Object.assign(receiptItems[index], itemBilling)
+        }
+      }
 
-      const cashPortion = round2(netTotal - gstInvoiceTotal)
-
-      // Default billPayment to gstInvoiceTotal, cashPayment to cashPortion
-      const billPayment = data.billPayment ?? gstInvoiceTotal
-      const cashPayment = data.cashPayment ?? cashPortion
+      const billPayment = data.billPayment ?? billing.summary.gstInvoiceTotal ?? 0
+      const cashPayment = data.cashPayment ?? billing.summary.cashPortion ?? 0
 
       await tx.purchaseReceipt.update({
         where: { id: receipt.id },
@@ -294,13 +347,15 @@ export const purchaseReceiptsRepository = {
           totalSlabs,
           subtotal: receiptSubtotal,
           adjustment,
-          netTotal,
-          gstInvoiceSqft,
-          gstInvoiceRate,
-          gstInvoiceBaseValue,
-          gstInvoiceGst,
-          gstInvoiceTotal,
-          cashPortion,
+          gstCalculationMode,
+          gstPercentage,
+          netTotal: billing.summary.netTotal,
+          gstInvoiceSqft: billing.summary.gstInvoiceSqft,
+          gstInvoiceRate: billing.summary.gstInvoiceRate,
+          gstInvoiceBaseValue: billing.summary.gstInvoiceBaseValue,
+          gstInvoiceGst: billing.summary.gstInvoiceGst,
+          gstInvoiceTotal: billing.summary.gstInvoiceTotal,
+          cashPortion: billing.summary.cashPortion,
           billPayment,
           cashPayment,
         },
@@ -385,21 +440,32 @@ export const purchaseReceiptsRepository = {
 
       const po = await tx.purchaseOrder.findUnique({
         where: { id: data.purchaseOrderId },
-        include: { items: { where: { isActive: true } } },
+        include: {
+          items: {
+            where: { isActive: true },
+            include: {
+              receiptItems: {
+                where: {
+                  isActive: true,
+                  purchaseReceipt: { isActive: true },
+                },
+                select: { receivedQty: true },
+              },
+            },
+          },
+        },
       })
 
       if (po) {
-        const totalOrdered = po.items.reduce((sum, i) => sum + Number(i.orderedQty), 0)
-        const totalReceived = data.items.reduce((sum, i) => sum + Number(i.receivedQty), 0)
-
-        let newStatus = 'PARTIAL_RECEIVED'
-        if (totalReceived >= totalOrdered) {
-          newStatus = 'COMPLETED'
-        }
+        const fullyReceived = po.items.length > 0 && po.items.every((orderItem) => (
+          orderItem.orderedQty === null
+          || orderItem.receiptItems.reduce((sum, item) => sum + Number(item.receivedQty), 0)
+            >= Number(orderItem.orderedQty)
+        ))
 
         await tx.purchaseOrder.update({
           where: { id: data.purchaseOrderId },
-          data: { status: newStatus as any },
+          data: { status: fullyReceived ? 'COMPLETED' : 'PARTIAL_RECEIVED' },
         })
       }
 
@@ -409,13 +475,7 @@ export const purchaseReceiptsRepository = {
         totalSlabs,
         subtotal: receiptSubtotal,
         adjustment,
-        netTotal,
-        gstInvoiceSqft,
-        gstInvoiceRate,
-        gstInvoiceBaseValue,
-        gstInvoiceGst,
-        gstInvoiceTotal,
-        cashPortion,
+        ...billing.summary,
         billPayment,
         cashPayment,
         items: receiptItems,

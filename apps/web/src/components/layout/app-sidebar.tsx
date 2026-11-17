@@ -17,7 +17,9 @@ import {
   ListChecks,
   Warehouse,
   CreditCard,
+  QrCode,
   Search,
+  Settings,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -25,12 +27,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { cn } from '@/lib/utils'
 import { useSidebar } from './sidebar-provider'
 import { useState } from 'react'
+import { authClient } from '@/lib/api'
+import { hasMinimumRole, isAppRole, type AppRole } from '@jg-app/shared'
 
 type NavItem = {
   label: string
   to?: string
   icon: React.ComponentType<{ className?: string }>
   children?: NavItem[]
+  minRole?: AppRole
 }
 
 const navGroups: { label: string; items: NavItem[] }[] = [
@@ -38,6 +43,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'Main',
     items: [
       { label: 'Dashboard', to: '/', icon: LayoutDashboard },
+      { label: 'Tasks & Follow-ups', to: '/tasks', icon: CalendarClock },
     ],
   },
   {
@@ -62,7 +68,9 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: 'Sales',
     items: [
       { label: 'Invoices', to: '/invoices', icon: Receipt },
+      { label: 'UPI QR Codes', to: '/qr-codes', icon: QrCode },
       { label: 'Customers', to: '/customers', icon: Users },
+      { label: 'Enquiries', to: '/enquiries', icon: ClipboardList },
       { label: 'Measurements', to: '/measurements', icon: Ruler },
     ],
   },
@@ -80,6 +88,14 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { label: 'Suppliers', to: '/suppliers', icon: Building2 },
       { label: 'Brokers', to: '/brokers', icon: HandCoins },
       { label: 'Transport', to: '/transport', icon: Truck },
+      { label: 'Workforce & Resources', to: '/resources', icon: Users },
+    ],
+  },
+  {
+    label: 'Settings',
+    items: [
+      { label: 'Users', to: '/users', icon: Users, minRole: 'admin' },
+      { label: 'Profile Settings', to: '/settings', icon: Settings, minRole: 'super_admin' },
     ],
   },
 ]
@@ -176,6 +192,18 @@ function NavGroupCollapsible({ item, collapsed }: { item: NavItem; collapsed: bo
 export function AppSidebar() {
   const { open, mobileOpen, setMobileOpen } = useSidebar()
   const collapsed = !open
+  const { data: session } = authClient.useSession()
+  const role = session?.user.role
+  const visibleNavGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const requiredRole = item.minRole
+        if (!requiredRole) return true
+        return isAppRole(role) && hasMinimumRole(role, requiredRole)
+      }),
+    }))
+    .filter((group) => group.items.length > 0)
 
   const sidebarContent = (
     <div className={cn('flex h-full flex-col', collapsed && 'items-center')}>
@@ -189,7 +217,7 @@ export function AppSidebar() {
 
       <ScrollArea className="flex-1 px-2 py-4">
         <nav className={cn('space-y-4', collapsed && 'space-y-2')}>
-          {navGroups.map((group) => (
+          {visibleNavGroups.map((group) => (
             <div key={group.label}>
               {!collapsed && (
                     <p className="mb-1 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
@@ -239,7 +267,7 @@ export function AppSidebar() {
             </div>
             <ScrollArea className="h-[calc(100vh-3.5rem)] px-2 py-4">
               <nav className="space-y-4">
-                {navGroups.map((group) => (
+                {visibleNavGroups.map((group) => (
                   <div key={group.label}>
                 <p className="mb-1 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
                       {group.label}

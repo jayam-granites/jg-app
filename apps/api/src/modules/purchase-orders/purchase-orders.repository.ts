@@ -54,10 +54,10 @@ export const purchaseOrdersRepository = {
     grandTotal?: number
     items: {
       productVariantId: number
-      orderedQty: number
+      orderedQty?: number
       expectedSlabCount?: number
-      unitPrice: number
-      amount: number
+      unitPrice?: number
+      amount?: number
       remarks?: string
     }[]
   }) {
@@ -76,10 +76,10 @@ export const purchaseOrdersRepository = {
           items: {
             create: data.items.map((item) => ({
               productVariantId: item.productVariantId,
-              orderedQty: item.orderedQty,
+              orderedQty: item.orderedQty ?? null,
               expectedSlabCount: item.expectedSlabCount ?? null,
-              unitPrice: item.unitPrice,
-              amount: item.amount,
+              unitPrice: item.unitPrice ?? null,
+              amount: item.amount ?? null,
               remarks: item.remarks ?? null,
             })),
           },
@@ -112,10 +112,10 @@ export const purchaseOrdersRepository = {
       items?: {
         id?: number
         productVariantId: number
-        orderedQty: number
+        orderedQty?: number
         expectedSlabCount?: number
-        unitPrice: number
-        amount: number
+        unitPrice?: number
+        amount?: number
         remarks?: string
       }[]
     },
@@ -159,10 +159,10 @@ export const purchaseOrdersRepository = {
               where: { id: item.id },
               data: {
                 productVariantId: item.productVariantId,
-                orderedQty: item.orderedQty,
+                orderedQty: item.orderedQty ?? null,
                 expectedSlabCount: item.expectedSlabCount ?? null,
-                unitPrice: item.unitPrice,
-                amount: item.amount,
+                unitPrice: item.unitPrice ?? null,
+                amount: item.amount ?? null,
                 remarks: item.remarks ?? null,
               },
             })
@@ -171,10 +171,10 @@ export const purchaseOrdersRepository = {
               data: {
                 purchaseOrderId: id,
                 productVariantId: item.productVariantId,
-                orderedQty: item.orderedQty,
+                orderedQty: item.orderedQty ?? null,
                 expectedSlabCount: item.expectedSlabCount ?? null,
-                unitPrice: item.unitPrice,
-                amount: item.amount,
+                unitPrice: item.unitPrice ?? null,
+                amount: item.amount ?? null,
                 remarks: item.remarks ?? null,
               },
             })

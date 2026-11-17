@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 import dayjs from '@/lib/dayjs'
-import { jayamGranitesLogoBase64 } from '@/features/measurements/lib/logo'
+import jayamGranitesLogo from '@/assets/jayam-granites-logo-pdf.png?inline'
 
 export const COMPANY = {
   name: 'JAYAM GRANITES',
@@ -13,6 +13,8 @@ export const COMPANY = {
   accountNumber: '50200097002262',
   ifsc: 'HDFC0002225',
   branch: 'AVINASHI',
+  upiVpa: '6382483513@hdfc',
+  upiName: 'Jayam Granites',
 }
 
 export const PAGE_WIDTH = 210
@@ -111,14 +113,10 @@ export function drawInfoColumns(
 
 export function drawCompanyHeader(
   doc: jsPDF,
-  options: { title?: string; showGstin?: boolean } = {},
+  options: { title?: string; showGstin?: boolean; rightTitle?: string; rightSubtitle?: string } = {},
 ) {
   const showGstin = options.showGstin !== false
-  try {
-    doc.addImage(jayamGranitesLogoBase64, 'PNG', MARGIN, 8, 24, 19)
-  } catch {
-    // ignore logo failures
-  }
+  doc.addImage(jayamGranitesLogo, 'PNG', MARGIN, 8, 24, 17.16)
 
   doc.setTextColor(...INK)
   doc.setFont('helvetica', 'bold')
@@ -134,7 +132,19 @@ export function drawCompanyHeader(
     doc.text(`GSTIN: ${COMPANY.gstin}`, 40, 29)
   }
 
-  const lineY = showGstin ? 34 : 30
+  const lineY = options.rightTitle ? 44 : showGstin ? 34 : 30
+  if (options.rightTitle) {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12.5)
+    doc.setTextColor(...INK)
+    doc.text(options.rightTitle, PAGE_WIDTH - MARGIN, 15, { align: 'right' })
+    if (options.rightSubtitle) {
+      doc.setFontSize(7.8)
+      doc.setTextColor(...MUTED)
+      doc.text(options.rightSubtitle, PAGE_WIDTH - MARGIN, 21, { align: 'right' })
+    }
+  }
+
   doc.setDrawColor(...INK)
   doc.setLineWidth(0.8)
   doc.line(MARGIN, lineY, PAGE_WIDTH - MARGIN, lineY)

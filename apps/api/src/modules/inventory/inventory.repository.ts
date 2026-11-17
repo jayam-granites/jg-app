@@ -1,4 +1,5 @@
 import { prisma } from '#/lib/prisma'
+import { ConflictError, NotFoundError } from '#/lib/errors'
 
 const batchInclude = {
   productVariant: {
@@ -26,7 +27,7 @@ const batchInclude = {
   },
   slabs: {
     where: { isActive: true },
-    orderBy: { id: 'asc' },
+    orderBy: { id: 'desc' },
   },
 } as const
 
@@ -93,6 +94,7 @@ export const inventoryRepository = {
               thickness: slab.thickness ?? null,
               sqft: slab.sqft ?? null,
               isCrack: slab.isCrack ?? false,
+              isBroken: slab.isBroken ?? false,
               crackWidth: slab.crackWidth ?? null,
               crackHeight: slab.crackHeight ?? null,
               crackArea: slab.crackArea ?? null,
@@ -115,9 +117,12 @@ export const inventoryRepository = {
   },
 
   async createSlab(data: any) {
-    return prisma.inventorySlab.create({
-      data: data as any,
-    })
+    const [slab] = await createSlabsTransaction([data])
+    return slab
+  },
+
+  async createSlabs(data: any[]) {
+    return createSlabsTransaction(data)
   },
 
   async updateSlab(id: number, data: Record<string, unknown>) {
@@ -126,4 +131,82 @@ export const inventoryRepository = {
       data: data as any,
     })
   },
+
+  async deleteSlab(id: number) {
+    return prisma.$transaction(async (tx) => {
+      const slab = await tx.inventorySlab.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          inventoryBatchId: true,
+          isActive: true,
+          isSold: true,
+          isBroken: true,
+          invoiceItems: { select: { id: true } },
+        },
+      })
+      if (!slab || !slab.isActive) throw new NotFoundError('Inventory slab')
+      if (slab.isSold || slab.invoiceItems.length > 0) {
+        throw new ConflictError('Sold or invoiced slabs cannot be deleted')
+      }
+
+      const batch = await tx.inventoryBatch.findUnique({
+        where: { id: slab.inventoryBatchId },
+        select: { slabCount: true, totalQty: true, availableQty: true, damagedQty: true },
+      })
+      if (!batch) throw new NotFoundError('Inventory batch')
+
+      await tx.inventorySlab.update({
+        where: { id },
+        data: { isActive: false },
+      })
+      await tx.inventoryBatch.update({
+        where: { id: slab.inventoryBatchId },
+        data: {
+          slabCount: batch.slabCount === null ? null : Math.max(batch.slabCount - 1, 0),
+          totalQty: slab.isBroken ? batch.totalQty : Math.max(Number(batch.totalQty) - 1, 0),
+          availableQty: slab.isBroken ? batch.availableQty : Math.max(Number(batch.availableQty) - 1, 0),
+          damagedQty: slab.isBroken
+            ? Math.max(Number(batch.damagedQty ?? 0) - 1, 0)
+            : batch.damagedQty,
+        },
+      })
+    })
+  },
+}
+
+async function createSlabsTransaction(data: any[]) {
+  return prisma.$transaction(async (tx) => {
+    const slabs = []
+    for (const slabData of data) {
+      slabs.push(await tx.inventorySlab.create({ data: slabData as any }))
+    }
+
+    const batchIds = new Set(data.map((slab) => slab.inventoryBatchId))
+    for (const inventoryBatchId of batchIds) {
+      const batchSlabCount = data.filter((slab) => slab.inventoryBatchId === inventoryBatchId).length
+      const batch = await tx.inventoryBatch.findUnique({
+        where: { id: inventoryBatchId },
+        select: { slabCount: true },
+      })
+      if (!batch) throw new NotFoundError('Inventory batch')
+
+      const slabCount = batch.slabCount === null
+        ? await tx.inventorySlab.count({
+            where: { inventoryBatchId, isActive: true },
+          })
+        : undefined
+      await tx.inventoryBatch.update({
+        where: { id: inventoryBatchId },
+        data: {
+          ...(slabCount === undefined
+            ? { slabCount: { increment: batchSlabCount } }
+            : { slabCount }),
+          totalQty: { increment: batchSlabCount },
+          availableQty: { increment: batchSlabCount },
+        },
+      })
+    }
+    return slabs
+  })
 }

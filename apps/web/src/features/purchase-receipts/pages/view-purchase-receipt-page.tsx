@@ -14,7 +14,9 @@ export function ViewPurchaseReceiptPage() {
   const { data: settingsRes } = useAppSettings()
   const deleteReceipt = useDeletePurchaseReceipt()
   const receipt = receiptRes?.data
-  const gstPct = Number(settingsRes?.data?.[SETTINGS_KEYS.INVOICE_GST_PERCENT]) || 18
+  const gstPct = receipt?.gstPercentage != null
+    ? Number(receipt.gstPercentage)
+    : Number(settingsRes?.data?.[SETTINGS_KEYS.INVOICE_GST_PERCENT]) || 18
 
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this purchase receipt?')) {
@@ -107,7 +109,7 @@ export function ViewPurchaseReceiptPage() {
                 <th className="px-4 py-2 text-left font-medium">Part</th>
                 <th className="px-4 py-2 text-left font-medium">Batch</th>
                 <th className="px-4 py-2 text-right font-medium">Sqft</th>
-                <th className="px-4 py-2 text-right font-medium">Rate (₹/sqft)</th>
+                <th className="px-4 py-2 text-right font-medium">Buying Price (₹/sqft)</th>
                 <th className="px-4 py-2 text-right font-medium">Amount (₹)</th>
                 <th className="px-4 py-2 text-right font-medium">Slabs</th>
                 <th className="px-4 py-2 text-right font-medium">Inventory</th>
@@ -123,9 +125,9 @@ export function ViewPurchaseReceiptPage() {
                       <span className="ml-1 text-muted-foreground text-xs">({item.productVariant?.skuCode})</span>
                     </td>
                     <td className="px-4 py-2 font-mono text-xs">{item.batchNo}</td>
-                    <td className="px-4 py-2 text-right">{itemSqft > 0 ? itemSqft.toFixed(3) : Number(item.receivedQty)}</td>
-                    <td className="px-4 py-2 text-right">{item.rate ? `₹${Number(item.rate)}` : '-'}</td>
-                    <td className="px-4 py-2 text-right font-medium">₹{Number(item.receivedQty).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right">{itemSqft.toFixed(3)}</td>
+                    <td className="px-4 py-2 text-right">₹{Number(item.rate ?? item.buyingPrice).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right font-medium">₹{(itemSqft * Number(item.rate ?? item.buyingPrice)).toLocaleString()}</td>
                     <td className="px-4 py-2 text-right">{item.slabCount ?? item.slabs?.length ?? 0}</td>
                     <td className="px-4 py-2 text-right">
                       {item.inventoryBatch ? (
@@ -204,57 +206,144 @@ export function ViewPurchaseReceiptPage() {
       )}
 
       {/* Section 2: GST Bill Calculation */}
-      {Number(receipt.gstInvoiceTotal ?? 0) > 0 && (
+      {(Number(receipt.gstInvoiceTotal ?? 0) > 0 || receipt.gstCalculationMode === 'PRODUCT') && (
         <Card>
           <CardHeader><CardTitle className="text-lg font-semibold">2. GST Bill Calculation</CardTitle></CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">GST Invoice Sqft</Label>
-                <p className="text-lg font-bold">{Number(receipt.gstInvoiceSqft ?? 0).toFixed(3)}</p>
+            {receipt.gstCalculationMode === 'PRODUCT' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-3 py-2 text-left font-medium">Product</th>
+                      <th className="px-3 py-2 text-right font-medium">Invoice Sqft</th>
+                      <th className="px-3 py-2 text-right font-medium">Rate</th>
+                      <th className="px-3 py-2 text-right font-medium">Base</th>
+                      <th className="px-3 py-2 text-right font-medium">GST @ {gstPct}%</th>
+                      <th className="px-3 py-2 text-right font-medium">Bill Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receipt.items?.map((item: any) => (
+                      <tr key={item.id} className="border-b last:border-0">
+                        <td className="px-3 py-2">{item.productVariant?.product?.name}</td>
+                        <td className="px-3 py-2 text-right">{Number(item.gstInvoiceSqft ?? 0).toFixed(3)}</td>
+                        <td className="px-3 py-2 text-right">₹{Number(item.gstInvoiceRate ?? 0).toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right">₹{Number(item.gstInvoiceBaseValue ?? 0).toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right">₹{Number(item.gstInvoiceGst ?? 0).toLocaleString()}</td>
+                        <td className="px-3 py-2 text-right font-semibold">₹{Number(item.gstInvoiceTotal ?? 0).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t font-semibold">
+                      <td className="px-3 py-2">Total</td>
+                      <td className="px-3 py-2 text-right">{Number(receipt.gstInvoiceSqft ?? 0).toFixed(3)}</td>
+                      <td />
+                      <td className="px-3 py-2 text-right">₹{Number(receipt.gstInvoiceBaseValue ?? 0).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right">₹{Number(receipt.gstInvoiceGst ?? 0).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-primary">₹{Number(receipt.gstInvoiceTotal ?? 0).toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Rate (₹/sqft)</Label>
-                <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceRate ?? 0)}</p>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Base Value</Label>
-                <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceBaseValue ?? 0).toLocaleString()}</p>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">GST @ {gstPct}%</Label>
-                <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceGst ?? 0).toLocaleString()}</p>
-              </div>
-            </div>
-            <div className="flex justify-end border-t pt-3">
-              <div className="text-right">
-                <Label className="text-xs text-muted-foreground">GST Invoice Total</Label>
-                <p className="text-2xl font-bold text-primary">₹{Number(receipt.gstInvoiceTotal ?? 0).toLocaleString()}</p>
-              </div>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">GST Invoice Sqft</Label>
+                    <p className="text-lg font-bold">{Number(receipt.gstInvoiceSqft ?? 0).toFixed(3)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Rate (₹/sqft)</Label>
+                    <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceRate ?? 0)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Base Value</Label>
+                    <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceBaseValue ?? 0).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">GST @ {gstPct}%</Label>
+                    <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceGst ?? 0).toLocaleString()}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end border-t pt-3">
+                  <div className="text-right">
+                    <Label className="text-xs text-muted-foreground">GST Invoice Total</Label>
+                    <p className="text-2xl font-bold text-primary">₹{Number(receipt.gstInvoiceTotal ?? 0).toLocaleString()}</p>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
 
       {/* Section 3: Cash Portion */}
-      {Number(receipt.cashPortion ?? 0) > 0 && (
+      {(Number(receipt.cashPortion ?? 0) !== 0 || receipt.gstCalculationMode === 'PRODUCT') && (
         <Card>
           <CardHeader><CardTitle className="text-lg font-semibold">3. Cash Portion</CardTitle></CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground">Net Total Granite Value</Label>
-                <p className="text-lg font-bold">₹{Number(receipt.netTotal ?? 0).toLocaleString()}</p>
+            {receipt.gstCalculationMode === 'PRODUCT' ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="px-3 py-2 text-left font-medium">Product</th>
+                      <th className="px-3 py-2 text-right font-medium">Granite Value</th>
+                      <th className="px-3 py-2 text-right font-medium">Adjustment</th>
+                      <th className="px-3 py-2 text-right font-medium">GST Bill</th>
+                      <th className="px-3 py-2 text-right font-medium">Cash Portion</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receipt.items?.map((item: any) => {
+                      const itemSqft = item.slabs?.reduce(
+                        (sum: number, slab: any) => sum + Number(slab.sqft ?? 0),
+                        0,
+                      ) ?? 0
+                      const itemGraniteValue = itemSqft * Number(item.rate ?? item.buyingPrice)
+                      const itemAdjustment = itemGraniteValue
+                        - Number(item.gstInvoiceTotal ?? 0)
+                        - Number(item.cashPortion ?? 0)
+                      return (
+                        <tr key={item.id} className="border-b last:border-0">
+                          <td className="px-3 py-2">{item.productVariant?.product?.name}</td>
+                          <td className="px-3 py-2 text-right">₹{itemGraniteValue.toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right">₹{itemAdjustment.toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right">₹{Number(item.gstInvoiceTotal ?? 0).toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right font-semibold">₹{Number(item.cashPortion ?? 0).toLocaleString()}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t font-semibold">
+                      <td className="px-3 py-2">Total</td>
+                      <td className="px-3 py-2 text-right">₹{Number(receipt.subtotal ?? 0).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right">₹{Number(receipt.adjustment ?? 0).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right">₹{Number(receipt.gstInvoiceTotal ?? 0).toLocaleString()}</td>
+                      <td className="px-3 py-2 text-right text-primary">₹{Number(receipt.cashPortion ?? 0).toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Less: GST Invoice Value</Label>
-                <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceTotal ?? 0).toLocaleString()}</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Net Total Granite Value</Label>
+                  <p className="text-lg font-bold">₹{Number(receipt.netTotal ?? 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Less: GST Invoice Total</Label>
+                  <p className="text-lg font-bold">₹{Number(receipt.gstInvoiceTotal ?? 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Cash Portion</Label>
+                  <p className="text-lg font-bold text-primary">₹{Number(receipt.cashPortion ?? 0).toLocaleString()}</p>
+                </div>
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Cash Portion</Label>
-                <p className="text-lg font-bold text-primary">₹{Number(receipt.cashPortion ?? 0).toLocaleString()}</p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       )}

@@ -35,7 +35,7 @@ export const measurementsRepository = {
           orderBy: { slabNumber: 'asc' },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     })
   },
 

@@ -16,6 +16,7 @@ export type DataTableRowAction<TData> = {
   icon?: React.ComponentType<{ className?: string }>
   onClick: (row: TData) => void
   variant?: 'default' | 'destructive' | 'outline' | 'ghost'
+  disabled?: (row: TData) => boolean
 }
 
 export type DataTableBulkAction<TData> = {

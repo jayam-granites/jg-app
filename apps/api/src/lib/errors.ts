@@ -15,6 +15,12 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(message: string = 'You are not allowed to perform this action') {
+    super(message, 403, 'FORBIDDEN')
+  }
+}
+
 export class ValidationError extends AppError {
   constructor(message: string) {
     super(message, 400, 'VALIDATION_ERROR')

@@ -25,10 +25,10 @@ export const purchaseOrdersService = {
     grandTotal?: number
     items: {
       productVariantId: number
-      orderedQty: number
+      orderedQty?: number
       expectedSlabCount?: number
-      unitPrice: number
-      amount: number
+      unitPrice?: number
+      amount?: number
       remarks?: string
     }[]
   }) {
@@ -70,10 +70,10 @@ export const purchaseOrdersService = {
       items?: {
         id?: number
         productVariantId: number
-        orderedQty: number
+        orderedQty?: number
         expectedSlabCount?: number
-        unitPrice: number
-        amount: number
+        unitPrice?: number
+        amount?: number
         remarks?: string
       }[]
     },

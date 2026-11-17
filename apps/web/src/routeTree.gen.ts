@@ -12,13 +12,19 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as UnitsRouteImport } from './routes/units'
 import { Route as TransportRouteImport } from './routes/transport'
+import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SuppliersRouteImport } from './routes/suppliers'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as QrCodesRouteImport } from './routes/qr-codes'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PriceSearchRouteImport } from './routes/price-search'
 import { Route as MeasurementsRouteImport } from './routes/measurements'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as InvoicesRouteImport } from './routes/invoices'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as ExpenseSchedulesRouteImport } from './routes/expense-schedules'
+import { Route as EnquiriesRouteImport } from './routes/enquiries'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as BrokersRouteImport } from './routes/brokers'
@@ -67,9 +73,29 @@ const TransportRoute = TransportRouteImport.update({
   path: '/transport',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SuppliersRoute = SuppliersRouteImport.update({
   id: '/suppliers',
   path: '/suppliers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRoute = ResourcesRouteImport.update({
+  id: '/resources',
+  path: '/resources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QrCodesRoute = QrCodesRouteImport.update({
+  id: '/qr-codes',
+  path: '/qr-codes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsRoute = ProductsRouteImport.update({
@@ -87,6 +113,11 @@ const MeasurementsRoute = MeasurementsRouteImport.update({
   path: '/measurements',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InvoicesRoute = InvoicesRouteImport.update({
   id: '/invoices',
   path: '/invoices',
@@ -100,6 +131,11 @@ const ExpensesRoute = ExpensesRouteImport.update({
 const ExpenseSchedulesRoute = ExpenseSchedulesRouteImport.update({
   id: '/expense-schedules',
   path: '/expense-schedules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnquiriesRoute = EnquiriesRouteImport.update({
+  id: '/enquiries',
+  path: '/enquiries',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CustomersRoute = CustomersRouteImport.update({
@@ -270,13 +306,19 @@ export interface FileRoutesByFullPath {
   '/brokers': typeof BrokersRoute
   '/categories': typeof CategoriesRoute
   '/customers': typeof CustomersRouteWithChildren
+  '/enquiries': typeof EnquiriesRoute
   '/expense-schedules': typeof ExpenseSchedulesRoute
   '/expenses': typeof ExpensesRoute
   '/invoices': typeof InvoicesRouteWithChildren
+  '/login': typeof LoginRoute
   '/measurements': typeof MeasurementsRouteWithChildren
   '/price-search': typeof PriceSearchRoute
   '/products': typeof ProductsRouteWithChildren
+  '/qr-codes': typeof QrCodesRoute
+  '/resources': typeof ResourcesRoute
+  '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
+  '/tasks': typeof TasksRoute
   '/transport': typeof TransportRoute
   '/units': typeof UnitsRoute
   '/users': typeof UsersRoute
@@ -312,10 +354,16 @@ export interface FileRoutesByTo {
   '/attributes': typeof AttributesRoute
   '/brokers': typeof BrokersRoute
   '/categories': typeof CategoriesRoute
+  '/enquiries': typeof EnquiriesRoute
   '/expense-schedules': typeof ExpenseSchedulesRoute
   '/expenses': typeof ExpensesRoute
+  '/login': typeof LoginRoute
   '/price-search': typeof PriceSearchRoute
+  '/qr-codes': typeof QrCodesRoute
+  '/resources': typeof ResourcesRoute
+  '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
+  '/tasks': typeof TasksRoute
   '/transport': typeof TransportRoute
   '/units': typeof UnitsRoute
   '/users': typeof UsersRoute
@@ -353,13 +401,19 @@ export interface FileRoutesById {
   '/brokers': typeof BrokersRoute
   '/categories': typeof CategoriesRoute
   '/customers': typeof CustomersRouteWithChildren
+  '/enquiries': typeof EnquiriesRoute
   '/expense-schedules': typeof ExpenseSchedulesRoute
   '/expenses': typeof ExpensesRoute
   '/invoices': typeof InvoicesRouteWithChildren
+  '/login': typeof LoginRoute
   '/measurements': typeof MeasurementsRouteWithChildren
   '/price-search': typeof PriceSearchRoute
   '/products': typeof ProductsRouteWithChildren
+  '/qr-codes': typeof QrCodesRoute
+  '/resources': typeof ResourcesRoute
+  '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
+  '/tasks': typeof TasksRoute
   '/transport': typeof TransportRoute
   '/units': typeof UnitsRoute
   '/users': typeof UsersRoute
@@ -399,13 +453,19 @@ export interface FileRouteTypes {
     | '/brokers'
     | '/categories'
     | '/customers'
+    | '/enquiries'
     | '/expense-schedules'
     | '/expenses'
     | '/invoices'
+    | '/login'
     | '/measurements'
     | '/price-search'
     | '/products'
+    | '/qr-codes'
+    | '/resources'
+    | '/settings'
     | '/suppliers'
+    | '/tasks'
     | '/transport'
     | '/units'
     | '/users'
@@ -441,10 +501,16 @@ export interface FileRouteTypes {
     | '/attributes'
     | '/brokers'
     | '/categories'
+    | '/enquiries'
     | '/expense-schedules'
     | '/expenses'
+    | '/login'
     | '/price-search'
+    | '/qr-codes'
+    | '/resources'
+    | '/settings'
     | '/suppliers'
+    | '/tasks'
     | '/transport'
     | '/units'
     | '/users'
@@ -481,13 +547,19 @@ export interface FileRouteTypes {
     | '/brokers'
     | '/categories'
     | '/customers'
+    | '/enquiries'
     | '/expense-schedules'
     | '/expenses'
     | '/invoices'
+    | '/login'
     | '/measurements'
     | '/price-search'
     | '/products'
+    | '/qr-codes'
+    | '/resources'
+    | '/settings'
     | '/suppliers'
+    | '/tasks'
     | '/transport'
     | '/units'
     | '/users'
@@ -526,13 +598,19 @@ export interface RootRouteChildren {
   BrokersRoute: typeof BrokersRoute
   CategoriesRoute: typeof CategoriesRoute
   CustomersRoute: typeof CustomersRouteWithChildren
+  EnquiriesRoute: typeof EnquiriesRoute
   ExpenseSchedulesRoute: typeof ExpenseSchedulesRoute
   ExpensesRoute: typeof ExpensesRoute
   InvoicesRoute: typeof InvoicesRouteWithChildren
+  LoginRoute: typeof LoginRoute
   MeasurementsRoute: typeof MeasurementsRouteWithChildren
   PriceSearchRoute: typeof PriceSearchRoute
   ProductsRoute: typeof ProductsRouteWithChildren
+  QrCodesRoute: typeof QrCodesRoute
+  ResourcesRoute: typeof ResourcesRoute
+  SettingsRoute: typeof SettingsRoute
   SuppliersRoute: typeof SuppliersRoute
+  TasksRoute: typeof TasksRoute
   TransportRoute: typeof TransportRoute
   UnitsRoute: typeof UnitsRoute
   UsersRoute: typeof UsersRoute
@@ -570,11 +648,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TransportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/suppliers': {
       id: '/suppliers'
       path: '/suppliers'
       fullPath: '/suppliers'
       preLoaderRoute: typeof SuppliersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources': {
+      id: '/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ResourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qr-codes': {
+      id: '/qr-codes'
+      path: '/qr-codes'
+      fullPath: '/qr-codes'
+      preLoaderRoute: typeof QrCodesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -598,6 +704,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeasurementsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/invoices': {
       id: '/invoices'
       path: '/invoices'
@@ -617,6 +730,13 @@ declare module '@tanstack/react-router' {
       path: '/expense-schedules'
       fullPath: '/expense-schedules'
       preLoaderRoute: typeof ExpenseSchedulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/enquiries': {
+      id: '/enquiries'
+      path: '/enquiries'
+      fullPath: '/enquiries'
+      preLoaderRoute: typeof EnquiriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/customers': {
@@ -966,13 +1086,19 @@ const rootRouteChildren: RootRouteChildren = {
   BrokersRoute: BrokersRoute,
   CategoriesRoute: CategoriesRoute,
   CustomersRoute: CustomersRouteWithChildren,
+  EnquiriesRoute: EnquiriesRoute,
   ExpenseSchedulesRoute: ExpenseSchedulesRoute,
   ExpensesRoute: ExpensesRoute,
   InvoicesRoute: InvoicesRouteWithChildren,
+  LoginRoute: LoginRoute,
   MeasurementsRoute: MeasurementsRouteWithChildren,
   PriceSearchRoute: PriceSearchRoute,
   ProductsRoute: ProductsRouteWithChildren,
+  QrCodesRoute: QrCodesRoute,
+  ResourcesRoute: ResourcesRoute,
+  SettingsRoute: SettingsRoute,
   SuppliersRoute: SuppliersRoute,
+  TasksRoute: TasksRoute,
   TransportRoute: TransportRoute,
   UnitsRoute: UnitsRoute,
   UsersRoute: UsersRoute,

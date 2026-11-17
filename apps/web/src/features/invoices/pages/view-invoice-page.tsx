@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, CheckCircle2, FileText, Loader2, MoreHorizontal, Pencil, ReceiptText, Trash2, Truck, Users, Wallet } from 'lucide-react'
-import { useInvoice, useRecordInvoicePayment, useDeleteInvoicePayment, useDeleteInvoiceCommission } from '../hooks/use-invoices'
+import { useInvoice, useDeleteInvoicePayment, useDeleteInvoiceCommission } from '../hooks/use-invoices'
 import { useUpdateCustomer } from '@/features/customers/hooks/use-customers'
 import { useLookupOptions, lookupOptionMap, optionColorClasses } from '@/features/masters/hooks/use-lookups'
 import { LOOKUP_GROUPS } from '@jg-app/shared'
@@ -11,28 +10,21 @@ import { formatDate, formatDateTime } from '@/lib/date'
 import { buildInvoicePdf, buildOriginalBillPdf, buildTransportBillPdf } from '../lib/invoice-pdf'
 import { CloseSaleDialog } from '../components/close-sale-dialog'
 import { BrokerCommissionDialog } from '../components/broker-commission-dialog'
+import { RecordInvoicePaymentDialog } from '../components/record-invoice-payment-dialog'
 import { PageLayout } from '@/shared/components/page-layout'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
-import { api } from '@/lib/api'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
-const PAYMENT_METHODS = [
-  { value: 'Cash', label: 'Cash' },
-  { value: 'UPI', label: 'UPI' },
-  { value: 'Account', label: 'Account' },
-]
 
 function round2(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100
@@ -43,7 +35,6 @@ export function ViewInvoicePage() {
   const navigate = useNavigate()
   const { data: res, isLoading } = useInvoice(Number(id))
   const { data: statusOptionsRes } = useLookupOptions(LOOKUP_GROUPS.INVOICE_STATUS)
-  const recordPayment = useRecordInvoicePayment()
   const deletePayment = useDeleteInvoicePayment()
   const updateCustomer = useUpdateCustomer()
   const deleteCommission = useDeleteInvoiceCommission()
@@ -54,19 +45,7 @@ export function ViewInvoicePage() {
     [statusOptionsRes],
   )
 
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: async () => {
-      const res = await api.accounts.$get()
-      return res.json()
-    },
-  })
   const [paymentOpen, setPaymentOpen] = useState(false)
-  const [paymentAmount, setPaymentAmount] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('Cash')
-  const [accountId, setAccountId] = useState('')
-  const [paymentDate, setPaymentDate] = useState('')
-  const [paymentRemarks, setPaymentRemarks] = useState('')
   const [contactOpen, setContactOpen] = useState(false)
   const [editMobile, setEditMobile] = useState('')
   const [editAddress, setEditAddress] = useState('')
@@ -106,42 +85,7 @@ export function ViewInvoicePage() {
   }, [inv, received])
 
   function openPaymentDialog() {
-    const lastPayment = inv?.payments?.at(-1)
-    const defaultAccountId = lastPayment?.accountId ?? inv?.accountId
-    setPaymentAmount('')
-    setPaymentMethod(lastPayment?.paymentMethod || inv?.paymentMethod || 'Cash')
-    setAccountId(defaultAccountId != null ? String(defaultAccountId) : '')
-    setPaymentDate(new Date().toISOString().slice(0, 10))
-    setPaymentRemarks('')
     setPaymentOpen(true)
-  }
-
-  function savePayment() {
-    const amount = round2(Number(paymentAmount) || 0)
-    if (amount <= 0) {
-      alert('Enter a payment amount greater than 0')
-      return
-    }
-    if (amount > balance + 0.01) {
-      alert(`Payment cannot exceed the outstanding balance of ₹${balance.toFixed(2)}`)
-      return
-    }
-    recordPayment.mutate(
-      {
-        invoiceId: Number(id),
-        data: {
-          amount,
-          paymentMethod,
-          accountId: accountId ? Number(accountId) : undefined,
-          paymentDate: paymentDate || undefined,
-          remarks: paymentRemarks.trim() || undefined,
-        },
-      },
-      {
-        onSuccess: () => setPaymentOpen(false),
-        onError: (err: any) => alert(err?.message || 'Failed to record payment'),
-      },
-    )
   }
 
   function removePayment(paymentId: number) {
@@ -578,96 +522,7 @@ export function ViewInvoicePage() {
         )}
       </div>
 
-      <Dialog open={paymentOpen} onOpenChange={setPaymentOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Record Payment</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="rounded-lg bg-muted/30 px-3 py-2">
-                <div className="text-xs text-muted-foreground">Grand Total</div>
-                <div className="font-mono font-semibold">₹{grandTotal.toFixed(2)}</div>
-              </div>
-              <div className="rounded-lg bg-muted/30 px-3 py-2">
-                <div className="text-xs text-muted-foreground">Balance</div>
-                <div className="font-mono font-semibold text-destructive">₹{balance.toFixed(2)}</div>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Payment Amount (₹)</Label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max={balance}
-                  step="0.01"
-                  placeholder={`Max ${balance.toFixed(2)}`}
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                />
-                <Button type="button" variant="outline" size="sm" onClick={() => setPaymentAmount(String(balance))}>
-                  Full
-                </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_METHODS.map((method) => (
-                      <SelectItem key={method.value} value={method.value}>{method.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Payment Date</Label>
-                <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Receive Into Account</Label>
-              <Select value={accountId} onValueChange={setAccountId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(accounts || []).map((acc: any) => (
-                    <SelectItem key={acc.id} value={String(acc.id)}>
-                      {acc.name} ({acc.type})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Remarks</Label>
-              <Input
-                value={paymentRemarks}
-                onChange={(e) => setPaymentRemarks(e.target.value)}
-                placeholder="Optional note"
-              />
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Balance After Payment</span>
-              <span className="font-mono font-semibold">
-                ₹{Math.max(round2(balance - (Number(paymentAmount) || 0)), 0).toFixed(2)}
-              </span>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPaymentOpen(false)}>Cancel</Button>
-            <Button onClick={savePayment} disabled={recordPayment.isPending}>
-              {recordPayment.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Record Payment'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RecordInvoicePaymentDialog invoice={inv} open={paymentOpen} onOpenChange={setPaymentOpen} />
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="sm:max-w-sm">

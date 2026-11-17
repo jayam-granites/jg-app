@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { Plus, Loader2, Trash2, FileSpreadsheet, FileDown, Share2, Eye, ShoppingCart } from 'lucide-react'
+import { Plus, Loader2, Trash2, FileSpreadsheet, Share2, Eye, ShoppingCart } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/shared/components/data-table'
 import type { DataTableRowAction, DataTableBulkAction } from '@/shared/components/data-table'
@@ -8,7 +8,7 @@ import { PageLayout } from '@/shared/components/page-layout'
 import { Button } from '@/components/ui/button'
 import { useMeasurements, useCreateMeasurement, useDeleteMeasurement } from '@/features/measurements/hooks/use-measurements'
 import { useConvertMeasurementToSale } from '@/features/measurements/hooks/use-convert-to-sale'
-import { exportMeasurementToExcel, saveMeasurementPdf, shareMeasurementPdf, toMeasurementExport, buildMeasurementPdf } from '@/features/measurements/lib/export'
+import { exportMeasurementToExcel, shareMeasurementPdf, toMeasurementExport, buildMeasurementPdf } from '@/features/measurements/lib/export'
 import { previewPdf } from '@/lib/pdf'
 import { formatDateTime } from '@/lib/date'
 
@@ -65,20 +65,6 @@ function MeasurementsListPage() {
           } catch (error) {
             console.error(error)
             alert('Failed to export Excel file')
-          }
-        },
-      },
-      {
-        label: 'Save PDF',
-        icon: FileDown,
-        onClick: (item) => {
-          const measurement = measurements.find((m: any) => m.id === item.id)
-          if (!measurement) return
-          try {
-            saveMeasurementPdf(toMeasurementExport(measurement))
-          } catch (error) {
-            console.error(error)
-            alert('Failed to save PDF')
           }
         },
       },

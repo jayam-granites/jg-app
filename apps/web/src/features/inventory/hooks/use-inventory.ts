@@ -110,6 +110,56 @@ export function useCreateInventorySlab() {
   })
 }
 
+export function useCreateInventorySlabs() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: any[]) => {
+      const response = await api.api.inventory.slabs.bulk.$post({ json: data })
+      if (!response.ok) {
+        let message = 'Failed to save slabs'
+        try {
+          const errorData = await response.json()
+          message = errorData.error?.message || message
+        } catch {
+          const text = await response.text().catch(() => '')
+          if (text) message = text
+        }
+        throw new Error(message)
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+    },
+  })
+}
+
+export function useDeleteInventorySlab() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await api.api.inventory.slabs[':id'].$delete({
+        param: { id: String(id) },
+      })
+      if (!response.ok) {
+        let message = 'Failed to delete slab'
+        try {
+          const errorData = await response.json()
+          message = errorData.error?.message || message
+        } catch {
+          const text = await response.text().catch(() => '')
+          if (text) message = text
+        }
+        throw new Error(message)
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] })
+    },
+  })
+}
+
 export function useUpdateInventorySlab() {
   const queryClient = useQueryClient()
   return useMutation({

@@ -2,19 +2,19 @@ import { array, minLength, number, object, optional, pipe, string } from 'valibo
 
 export const PurchaseOrderItemSchema = object({
   productVariantId: number('Product variant is required'),
-  orderedQty: number('Ordered quantity is required'),
+  orderedQty: optional(number()),
   expectedSlabCount: optional(number()),
-  unitPrice: number('Unit price is required'),
-  amount: number('Amount is required'),
+  unitPrice: optional(number()),
+  amount: optional(number()),
   remarks: optional(string()),
 })
 
 export type PurchaseOrderItemFormData = {
   productVariantId: number
-  orderedQty: number
+  orderedQty?: number
   expectedSlabCount?: number
-  unitPrice: number
-  amount: number
+  unitPrice?: number
+  amount?: number
   remarks?: string
 }
 

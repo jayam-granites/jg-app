@@ -24,9 +24,9 @@ export function CreatePurchaseOrderPage() {
   const [items, setItems] = useState<{
     productVariantId: number
     productName: string
-    orderedQty: number
-    unitPrice: number
-    amount: number
+    orderedQty?: number
+    unitPrice?: number
+    amount?: number
   }[]>([])
   const [selectedProduct, setSelectedProduct] = useState('')
   const [selectedVariant, setSelectedVariant] = useState('')
@@ -42,17 +42,17 @@ export function CreatePurchaseOrderPage() {
   )
 
   const handleAddItem = () => {
-    if (!selectedVariant || !qty || !unitPrice) return
+    if (!selectedVariant) return
     const variant = allVariants.find((v: any) => v.id === Number(selectedVariant))
     if (!variant) return
-    const orderedQty = Number(qty)
-    const price = Number(unitPrice)
+    const orderedQty = qty.trim() ? Number(qty) : undefined
+    const price = unitPrice.trim() ? Number(unitPrice) : undefined
     setItems([...items, {
       productVariantId: variant.id,
       productName: `${variant.productName} - ${variant.skuCode}`,
       orderedQty,
       unitPrice: price,
-      amount: orderedQty * price,
+      amount: orderedQty !== undefined && price !== undefined ? orderedQty * price : undefined,
     }])
     setSelectedProduct('')
     setSelectedVariant('')
@@ -64,7 +64,9 @@ export function CreatePurchaseOrderPage() {
     setItems(items.filter((_, i) => i !== index))
   }
 
-  const subtotal = items.reduce((sum, i) => sum + i.amount, 0)
+  const subtotal = items.every((item) => item.amount !== undefined)
+    ? items.reduce((sum, item) => sum + (item.amount ?? 0), 0)
+    : undefined
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,8 +74,7 @@ export function CreatePurchaseOrderPage() {
       supplierId: Number(supplierId),
       expectedDate: expectedDate || undefined,
       remarks: remarks || undefined,
-      subtotal,
-      grandTotal: subtotal,
+      ...(subtotal === undefined ? {} : { subtotal, grandTotal: subtotal }),
       items: items.map((i) => ({
         productVariantId: i.productVariantId,
         orderedQty: i.orderedQty,
@@ -168,7 +169,7 @@ export function CreatePurchaseOrderPage() {
               <Input type="number" min="0" step="0.01" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="0" />
             </div>
             <div className="flex items-end">
-              <Button type="button" variant="outline" size="sm" onClick={handleAddItem} disabled={!selectedVariant || !qty || !unitPrice}>
+              <Button type="button" variant="outline" size="sm" onClick={handleAddItem} disabled={!selectedVariant}>
                 <Plus className="mr-1 h-3 w-3" /> Add
               </Button>
             </div>
@@ -190,9 +191,13 @@ export function CreatePurchaseOrderPage() {
                   {items.map((item, index) => (
                     <tr key={index} className="border-b last:border-0">
                       <td className="px-4 py-2">{item.productName}</td>
-                      <td className="px-4 py-2 text-right">{item.orderedQty}</td>
-                      <td className="px-4 py-2 text-right">₹{item.unitPrice.toLocaleString()}</td>
-                      <td className="px-4 py-2 text-right font-medium">₹{item.amount.toLocaleString()}</td>
+                      <td className="px-4 py-2 text-right">{item.orderedQty ?? '-'}</td>
+                      <td className="px-4 py-2 text-right">
+                        {item.unitPrice === undefined ? '-' : `₹${item.unitPrice.toLocaleString()}`}
+                      </td>
+                      <td className="px-4 py-2 text-right font-medium">
+                        {item.amount === undefined ? '-' : `₹${item.amount.toLocaleString()}`}
+                      </td>
                       <td className="px-4 py-2 text-right">
                         <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveItem(index)}>
                           <Trash2 className="h-3 w-3 text-destructive" />
@@ -204,7 +209,9 @@ export function CreatePurchaseOrderPage() {
                 <tfoot>
                   <tr className="border-t bg-muted/30 font-semibold">
                     <td className="px-4 py-2" colSpan={3}>Total</td>
-                    <td className="px-4 py-2 text-right">₹{subtotal.toLocaleString()}</td>
+                    <td className="px-4 py-2 text-right">
+                      {subtotal === undefined ? '—' : `₹${subtotal.toLocaleString()}`}
+                    </td>
                     <td></td>
                   </tr>
                 </tfoot>

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -39,11 +39,14 @@ export function ViewPurchaseOrderPage() {
     )
   }
 
-  const totalQty = po.items?.reduce((sum: number, i: any) => sum + Number(i.orderedQty), 0) ?? 0
+  const hasCompleteQuantities = po.items?.every((item: any) => item.orderedQty != null) ?? false
+  const totalQty = hasCompleteQuantities
+    ? po.items.reduce((sum: number, item: any) => sum + Number(item.orderedQty), 0)
+    : null
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/orders' })}>
             <ArrowLeft className="h-4 w-4" />
@@ -60,6 +63,17 @@ export function ViewPurchaseOrderPage() {
             </p>
           </div>
         </div>
+        {po.status !== 'CANCELLED' && po.status !== 'COMPLETED' && (
+          <Button
+            onClick={() => navigate({
+              to: '/purchase/receipts/create',
+              search: { purchaseOrderId: String(po.id) },
+            })}
+          >
+            <Plus data-icon="inline-start" />
+            Create Receipt
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -96,7 +110,9 @@ export function ViewPurchaseOrderPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Items ({totalQty} total)</CardTitle>
+          <CardTitle className="text-lg font-semibold">
+            Items ({po.items?.length ?? 0}){totalQty === null ? '' : ` · ${totalQty} total`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -115,9 +131,13 @@ export function ViewPurchaseOrderPage() {
                     <span className="font-medium">{item.productVariant?.product?.name}</span>
                     <span className="ml-2 text-muted-foreground">({item.productVariant?.skuCode})</span>
                   </td>
-                  <td className="px-4 py-2 text-right">{Number(item.orderedQty)}</td>
-                  <td className="px-4 py-2 text-right">₹{Number(item.unitPrice).toLocaleString()}</td>
-                  <td className="px-4 py-2 text-right font-medium">₹{Number(item.amount).toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right">{item.orderedQty == null ? '-' : Number(item.orderedQty)}</td>
+                  <td className="px-4 py-2 text-right">
+                    {item.unitPrice == null ? '-' : `₹${Number(item.unitPrice).toLocaleString()}`}
+                  </td>
+                  <td className="px-4 py-2 text-right font-medium">
+                    {item.amount == null ? '-' : `₹${Number(item.amount).toLocaleString()}`}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -125,7 +145,7 @@ export function ViewPurchaseOrderPage() {
               <tr className="border-t font-semibold">
                 <td className="px-4 py-2" colSpan={3}>Total</td>
                 <td className="px-4 py-2 text-right">
-                  ₹{(po.grandTotal ? Number(po.grandTotal) : 0).toLocaleString()}
+                  {po.grandTotal == null ? '-' : `₹${Number(po.grandTotal).toLocaleString()}`}
                 </td>
               </tr>
             </tfoot>

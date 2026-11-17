@@ -171,33 +171,6 @@ export const accountsService = {
     return updated
   },
 
-  async applyExpensePayment(accountId: number, expenseId: number, amount: number) {
-    const account = await this.getById(accountId)
-    const amt = round2(amount)
-    if (amt <= 0) return account
-    const current = Number(account.currentBalance)
-    const newBalance = round2(current - amt)
-    const [updated] = await prisma.$transaction([
-      prisma.account.update({
-        where: { id: accountId },
-        data: { currentBalance: newBalance },
-      }),
-      prisma.accountTransaction.create({
-        data: {
-          accountId,
-          type: 'EXPENSE',
-          amount: -amt,
-          balanceAfter: newBalance,
-          referenceId: String(expenseId),
-          referenceType: 'EXPENSE',
-          note: `Expense payment for expense #${expenseId}`,
-          transactionDate: new Date(),
-        },
-      }),
-    ])
-    return updated
-  },
-
   async getStatement(accountId: number) {
     await this.getById(accountId)
     const transactions = await accountsRepository.getTransactions(accountId)

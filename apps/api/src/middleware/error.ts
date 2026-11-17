@@ -10,7 +10,7 @@ export const errorMiddleware: ErrorHandler = (err, c) => {
     log.warn({ code: err.code, status: err.statusCode, message: err.message })
     return c.json(
       { error: { code: err.code, message: err.message } },
-      err.statusCode as 400 | 404 | 409 | 500,
+      err.statusCode as 400 | 403 | 404 | 409 | 500,
     )
   }
 

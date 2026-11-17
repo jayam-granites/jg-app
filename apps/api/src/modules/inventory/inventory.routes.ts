@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { vValidator } from '@hono/valibot-validator'
-import { CreateInventoryBatchSchema, CreateInventorySlabSchema, UpdateInventoryBatchSchema, UpdateInventorySlabSchema } from '@jg-app/validators'
+import { CreateInventoryBatchSchema, CreateInventorySlabSchema, CreateInventorySlabsSchema, UpdateInventoryBatchSchema, UpdateInventorySlabSchema } from '@jg-app/validators'
 import { inventoryService } from './inventory.service'
 
 export const inventoryRoutes = new Hono()
@@ -32,6 +32,11 @@ export const inventoryRoutes = new Hono()
     const slab = await inventoryService.createSlab(data)
     return c.json({ data: slab }, 201)
   })
+  .post('/slabs/bulk', vValidator('json', CreateInventorySlabsSchema), async (c) => {
+    const data = c.req.valid('json')
+    const slabs = await inventoryService.createSlabs(data)
+    return c.json({ data: slabs }, 201)
+  })
   .put('/batches/:id', vValidator('json', UpdateInventoryBatchSchema), async (c) => {
     const id = Number(c.req.param('id'))
     const data = c.req.valid('json')
@@ -43,4 +48,9 @@ export const inventoryRoutes = new Hono()
     const data = c.req.valid('json')
     const slab = await inventoryService.updateSlab(id, data as any)
     return c.json({ data: slab })
+  })
+  .delete('/slabs/:id', async (c) => {
+    const id = Number(c.req.param('id'))
+    await inventoryService.deleteSlab(id)
+    return c.json({ data: null, message: 'Inventory slab deleted' })
   })

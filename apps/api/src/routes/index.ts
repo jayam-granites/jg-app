@@ -16,8 +16,15 @@ import { purchaseReceiptsRoutes } from '#/modules/purchase-receipts/purchase-rec
 import { inventoryRoutes } from '#/modules/inventory/inventory.routes'
 import { accountsRoutes } from '#/modules/accounts/accounts.routes'
 import { dashboardRoutes } from '#/modules/dashboard/dashboard.routes'
+import { auth } from '#/lib/auth'
+import { settingsRoutes } from '#/modules/settings/settings.routes'
+import { upiProfilesRoutes } from '#/modules/upi-profiles/upi-profiles.routes'
+import { resourcesRoutes } from '#/modules/resources/resources.routes'
+import { enquiriesRoutes } from '#/modules/enquiries/enquiries.routes'
+import { tasksRoutes } from '#/modules/tasks/tasks.routes'
 
 const api = new Hono()
+  .all('/auth/*', (c) => auth.handler(c.req.raw))
   .route('/users', userRoutes)
   .route('/products', productRoutes)
   .route('/masters', mastersRoutes)
@@ -35,6 +42,11 @@ const api = new Hono()
   .route('/inventory', inventoryRoutes)
   .route('/accounts', accountsRoutes)
   .route('/dashboard', dashboardRoutes)
+  .route('/settings', settingsRoutes)
+  .route('/upi-profiles', upiProfilesRoutes)
+  .route('/resources', resourcesRoutes)
+  .route('/enquiries', enquiriesRoutes)
+  .route('/tasks', tasksRoutes)
   .get('/health', (c) =>
     c.json({ status: 'ok', timestamp: new Date().toISOString() }),
   )

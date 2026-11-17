@@ -19,15 +19,17 @@ export const purchaseReceiptsService = {
     invoiceNumber?: string
     receivedDate?: string
     adjustment?: number
+    gstCalculationMode?: 'OVERALL' | 'PRODUCT'
     gstInvoiceSqft?: number
     gstInvoiceRate?: number
     billPayment?: number
     cashPayment?: number
     remarks?: string
     items: {
+      purchaseOrderItemId: number
       productVariantId: number
       batchNo?: string
-      receivedQty: number
+      receivedQty?: number
       slabCount?: number
       damagedQty?: number
       acceptedQty?: number
@@ -39,14 +41,18 @@ export const purchaseReceiptsService = {
       sellingPriceTo?: number
       widthAllowance?: number
       heightAllowance?: number
+      gstInvoiceSqft?: number
+      gstInvoiceRate?: number
       remarks?: string
-      slabs?: {
+      slabs: {
         serialNo?: string
         length?: number
         width?: number
         thickness?: number
         sqft?: number
         isCrack?: boolean
+        crackWidth?: number
+        crackHeight?: number
         isBroken?: boolean
         remarks?: string
       }[]
@@ -67,18 +73,46 @@ export const purchaseReceiptsService = {
     const po = await purchaseOrdersRepository.findById(data.purchaseOrderId)
     if (!po) throw new NotFoundError('Purchase order')
 
+    const items = data.items.map((item) => {
+      const poItem = po.items.find((candidate) => candidate.id === item.purchaseOrderItemId)
+      if (!poItem || poItem.productVariantId !== item.productVariantId) {
+        throw new ValidationError('Receipt item must match an active item on the selected purchase order')
+      }
+      if (!item.slabs.length) {
+        throw new ValidationError('At least one slab measurement is required for each receipt item')
+      }
+      if (item.slabs.some((slab) => slab.isCrack
+        && (slab.crackWidth === undefined || slab.crackWidth <= 0
+          || slab.crackHeight === undefined || slab.crackHeight <= 0))) {
+        throw new ValidationError('Crack width and height are required for cracked slabs')
+      }
+      const damagedQty = item.slabs.filter((slab) => slab.isBroken).length
+      const receivedQty = item.slabs.length
+      return {
+        ...item,
+        receivedQty,
+        slabCount: receivedQty,
+        damagedQty,
+        acceptedQty: receivedQty - damagedQty,
+        rejectedQty: damagedQty,
+        gstInvoiceSqft: item.gstInvoiceSqft,
+        gstInvoiceRate: item.gstInvoiceRate,
+      }
+    })
+
     return purchaseReceiptsRepository.createWithItems({
       purchaseOrderId: data.purchaseOrderId,
       vehicleNumber: data.vehicleNumber,
       invoiceNumber: data.invoiceNumber,
       receivedDate: data.receivedDate ? new Date(data.receivedDate) : new Date(),
       adjustment: data.adjustment,
+      gstCalculationMode: data.gstCalculationMode ?? 'OVERALL',
       gstInvoiceSqft: data.gstInvoiceSqft,
       gstInvoiceRate: data.gstInvoiceRate,
       billPayment: data.billPayment,
       cashPayment: data.cashPayment,
       remarks: data.remarks,
-      items: data.items,
+      items,
       expenses: data.expenses,
     })
   },

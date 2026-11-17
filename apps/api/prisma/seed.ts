@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { auth } from '../src/lib/auth'
+import { prisma } from '../src/lib/prisma'
+import { isAppRole } from '@jg-app/shared'
 
 const LOOKUP_OPTIONS: {
   group: string
@@ -56,6 +56,60 @@ const SETTINGS: { key: string; value: string }[] = [
 ]
 
 async function main() {
+  const testAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase()
+  const testAdminPassword = process.env.SEED_ADMIN_PASSWORD
+  const testAdminName = process.env.SEED_ADMIN_NAME?.trim() || 'Admin'
+  const testAdminRole = process.env.SEED_ADMIN_ROLE ?? 'admin'
+
+  if (testAdminEmail && testAdminPassword) {
+    if (!isAppRole(testAdminRole)) {
+      throw new Error(`Invalid SEED_ADMIN_ROLE: ${testAdminRole}`)
+    }
+
+    const user = await prisma.user.upsert({
+      where: { email: testAdminEmail },
+      update: {
+        name: testAdminName,
+        role: testAdminRole,
+        emailVerified: true,
+      },
+      create: {
+        name: testAdminName,
+        email: testAdminEmail,
+        emailVerified: true,
+        role: testAdminRole,
+      },
+    })
+    const context = await auth.$context
+    const password = await context.password.hash(testAdminPassword)
+    const credential = await prisma.authAccount.findFirst({
+      where: { userId: user.id, providerId: 'credential' },
+      select: { id: true },
+    })
+
+    if (credential) {
+      await prisma.authAccount.update({
+        where: { id: credential.id },
+        data: { password },
+      })
+    } else {
+      await prisma.authAccount.create({
+        data: {
+          accountId: user.id,
+          providerId: 'credential',
+          userId: user.id,
+          password,
+        },
+      })
+    }
+
+    console.log(`Seeded test admin: ${testAdminEmail}`)
+  } else if (testAdminEmail || testAdminPassword) {
+    throw new Error('Set both SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to seed the test admin')
+  } else {
+    console.log('Skipping test admin; set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to enable it')
+  }
+
   await prisma.user.upsert({
     where: { email: 'alice@example.com' },
     update: {},

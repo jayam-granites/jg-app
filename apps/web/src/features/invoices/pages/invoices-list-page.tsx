@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { CheckCircle2, FileText, Plus, ReceiptText, Trash2, Truck, Users } from 'lucide-react'
+import { CheckCircle2, Download, FileText, Plus, ReceiptText, Trash2, Truck, Users, Wallet } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/shared/components/data-table'
 import type { DataTableRowAction, DataTableBulkAction } from '@/shared/components/data-table'
@@ -12,9 +12,10 @@ import { formatDateTime } from '@/lib/date'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { previewPdf } from '@/lib/pdf'
-import { buildInvoicePdf, buildOriginalBillPdf, buildTransportBillPdf } from '../lib/invoice-pdf'
+import { buildInvoicePdf, buildOriginalBillPdf, buildTransportBillPdf, downloadInvoicePdf } from '../lib/invoice-pdf'
 import { CloseSaleDialog } from '../components/close-sale-dialog'
 import { BrokerCommissionDialog } from '../components/broker-commission-dialog'
+import { RecordInvoicePaymentDialog } from '../components/record-invoice-payment-dialog'
 
 type InvoiceRow = {
   id: number
@@ -36,6 +37,7 @@ function InvoicesListPage() {
   const deleteInvoice = useDeleteInvoice()
   const [closeSaleInvoice, setCloseSaleInvoice] = useState<any | null>(null)
   const [commissionInvoice, setCommissionInvoice] = useState<InvoiceRow | null>(null)
+  const [paymentInvoice, setPaymentInvoice] = useState<any | null>(null)
 
   const invoices = invoicesRes?.data ?? []
   const statusMap = useMemo(
@@ -67,11 +69,32 @@ function InvoicesListPage() {
         onClick: (item) => navigate({ to: '/invoices/$id', params: { id: String(item.id) } }),
       },
       {
+        label: 'Record Payment',
+        icon: Wallet,
+        disabled: (item) => item.balanceAmount <= 0.001,
+        onClick: (item) => {
+          const invoice = findInvoice(item)
+          if (invoice) setPaymentInvoice(invoice)
+        },
+      },
+      {
         label: 'Print Bill',
         icon: FileText,
         onClick: (item) => {
           const invoice = findInvoice(item)
           if (invoice) previewPdf(buildInvoicePdf(invoice))
+        },
+      },
+      {
+        label: 'Download Tax Invoice',
+        icon: Download,
+        onClick: (item) => {
+          const invoice = findInvoice(item)
+          if (invoice) {
+            void downloadInvoicePdf(invoice).catch((error: unknown) => {
+              window.alert(error instanceof Error ? error.message : 'Failed to download invoice PDF')
+            })
+          }
         },
       },
       {
@@ -93,6 +116,7 @@ function InvoicesListPage() {
       {
         label: 'Close Sale',
         icon: CheckCircle2,
+        disabled: (item) => item.status === 'PAID',
         onClick: (item) => {
           const invoice = findInvoice(item)
           if (invoice) setCloseSaleInvoice(invoice)
@@ -218,6 +242,11 @@ function InvoicesListPage() {
         grandTotal={commissionInvoice?.grandTotal ?? 0}
         open={commissionInvoice !== null}
         onOpenChange={(open) => { if (!open) setCommissionInvoice(null) }}
+      />
+      <RecordInvoicePaymentDialog
+        invoice={paymentInvoice}
+        open={paymentInvoice !== null}
+        onOpenChange={(open) => { if (!open) setPaymentInvoice(null) }}
       />
     </PageLayout>
   )

@@ -118,6 +118,11 @@ export function EditPurchaseReceiptPage() {
         {/* Granite Billing Fields */}
         <div className="rounded-lg border p-4 space-y-4">
           <h3 className="text-lg font-semibold">Billing & Payment</h3>
+          {receipt.gstCalculationMode === 'PRODUCT' && (
+            <p className="text-sm text-muted-foreground">
+              GST values are recorded per product and cannot be changed from the receipt header.
+            </p>
+          )}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Adjustment (₹)</Label>
@@ -125,11 +130,11 @@ export function EditPurchaseReceiptPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">GST Invoice Sqft</Label>
-              <Input type="number" min="0" step="0.001" value={gstInvoiceSqft} onChange={(e) => setGstInvoiceSqft(e.target.value)} placeholder="0" />
+              <Input type="number" min="0" step="0.001" value={gstInvoiceSqft} onChange={(e) => setGstInvoiceSqft(e.target.value)} placeholder="0" disabled={receipt.gstCalculationMode === 'PRODUCT'} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">GST Invoice Rate (₹/sqft)</Label>
-              <Input type="number" min="0" step="0.01" value={gstInvoiceRate} onChange={(e) => setGstInvoiceRate(e.target.value)} placeholder="0" />
+              <Input type="number" min="0" step="0.01" value={gstInvoiceRate} onChange={(e) => setGstInvoiceRate(e.target.value)} placeholder="0" disabled={receipt.gstCalculationMode === 'PRODUCT'} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Subtotal (read-only)</Label>
@@ -163,8 +168,7 @@ export function EditPurchaseReceiptPage() {
                   <th className="px-4 py-2 text-left font-medium">Item</th>
                   <th className="px-4 py-2 text-left font-medium">Batch</th>
                   <th className="px-4 py-2 text-right font-medium">Received</th>
-                  <th className="px-4 py-2 text-right font-medium">Rate</th>
-                  <th className="px-4 py-2 text-right font-medium">Buying Price</th>
+                  <th className="px-4 py-2 text-right font-medium">Buying Price (₹/sqft)</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,7 +177,6 @@ export function EditPurchaseReceiptPage() {
                     <td className="px-4 py-2">{item.productVariant?.product?.name} ({item.productVariant?.skuCode})</td>
                     <td className="px-4 py-2 font-mono text-xs">{item.batchNo}</td>
                     <td className="px-4 py-2 text-right">{Number(item.receivedQty)}</td>
-                    <td className="px-4 py-2 text-right">{item.rate ? `₹${Number(item.rate)}` : '-'}</td>
                     <td className="px-4 py-2 text-right">₹{Number(item.buyingPrice).toLocaleString()}</td>
                   </tr>
                 ))}

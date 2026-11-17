@@ -56,19 +56,11 @@ export const inventoryService = {
   },
 
   async createSlab(data: any) {
-    return inventoryRepository.createSlab({
-      inventoryBatchId: data.inventoryBatchId,
-      serialNo: data.serialNo,
-      length: data.length ?? null,
-      width: data.width ?? null,
-      thickness: data.thickness ?? null,
-      sqft: data.sqft ?? null,
-      isCrack: data.isCrack ?? false,
-      crackWidth: data.crackWidth ?? null,
-      crackHeight: data.crackHeight ?? null,
-      crackArea: data.crackArea ?? null,
-      remarks: data.remarks ?? null,
-    })
+    return inventoryRepository.createSlab(toSlabData(data))
+  },
+
+  async createSlabs(data: any[]) {
+    return inventoryRepository.createSlabs(data.map(toSlabData))
   },
 
   async updateSlab(id: number, data: any) {
@@ -86,4 +78,25 @@ export const inventoryService = {
     if (data.crackArea !== undefined) dbData.crackArea = data.crackArea
     return inventoryRepository.updateSlab(id, dbData)
   },
+
+  deleteSlab(id: number) {
+    return inventoryRepository.deleteSlab(id)
+  },
+}
+
+function toSlabData(data: any) {
+  return {
+    inventoryBatchId: data.inventoryBatchId,
+    serialNo: data.serialNo,
+    length: data.length ?? null,
+    width: data.width ?? null,
+    thickness: data.thickness ?? null,
+    sqft: data.sqft ?? null,
+    isCrack: data.isCrack ?? false,
+    isBroken: data.isBroken ?? false,
+    crackWidth: data.crackWidth ?? null,
+    crackHeight: data.crackHeight ?? null,
+    crackArea: data.crackArea ?? null,
+    remarks: data.remarks ?? null,
+  }
 }

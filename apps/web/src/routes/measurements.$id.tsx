@@ -7,7 +7,15 @@ import { PageLayout } from '@/shared/components/page-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
@@ -34,6 +42,10 @@ export type ProductSlabTableHandle = {
   getSlabs: () => SlabRow[]
 }
 
+type PendingRemoval =
+  | { kind: 'product'; productId: number; productName: string; slabCount: number }
+  | { kind: 'measurement' }
+
 const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
   product: { id: number; name: string }
   existingSlabs: SlabRow[]
@@ -42,15 +54,20 @@ const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
 }>(function ProductSlabTable({ product, existingSlabs, onRemove, onAreaChange }, ref) {
   const [localSlabs, setLocalSlabs] = useState<SlabRow[]>([])
   const [nextSlabNumber, setNextSlabNumber] = useState(1)
+  const [slabToRemove, setSlabToRemove] = useState<SlabRow | null>(null)
 
-  const loadedKey = useRef('')
+  const loadedKey = useRef<string | null>(null)
+  const widthInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  const heightInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     const key = existingSlabs.map((s) => `${s.id}`).join(',')
     if (key !== loadedKey.current) {
       loadedKey.current = key
       if (existingSlabs.length > 0) {
-        const rows = existingSlabs.map((s) => ({ ...s }))
+        const rows = [...existingSlabs]
+          .sort((a, b) => a.slabNumber - b.slabNumber)
+          .map((s) => ({ ...s }))
         setLocalSlabs(rows)
         const maxNum = rows.reduce((max, r) => Math.max(max, r.slabNumber), 0)
         setNextSlabNumber(maxNum + 1)
@@ -85,30 +102,18 @@ const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
       slab.area = calcArea(field === 'width' ? num : slab.width, field === 'height' ? num : slab.height)
       updated[index] = slab
 
-      // Auto-open next slab when both width and height are filled (only for the last row)
-      if (num > 0 && slab.width > 0 && slab.height > 0 && index === updated.length - 1) {
-        const newId = `__new__${nextSlabNumber}`
-        updated.push({
-          id: newId,
-          productId: product.id,
-          slabNumber: nextSlabNumber,
-          width: 0,
-          height: 0,
-          area: 0,
-        })
-        setNextSlabNumber((n) => n + 1)
-      }
-
       return updated
     })
   }
 
   function addRow() {
+    const newId = `__new__${nextSlabNumber}`
     setLocalSlabs((prev) => [
+      { id: newId, productId: product.id, slabNumber: nextSlabNumber, width: 0, height: 0, area: 0 },
       ...prev,
-      { id: `__new__${nextSlabNumber}`, productId: product.id, slabNumber: nextSlabNumber, width: 0, height: 0, area: 0 },
     ])
     setNextSlabNumber((n) => n + 1)
+    requestAnimationFrame(() => widthInputRefs.current[newId]?.focus())
   }
 
   function duplicateRow(index: number) {
@@ -124,16 +129,22 @@ const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
         area: slab.area,
       }
       return [
-        ...prev.slice(0, index + 1),
         duplicated,
-        ...prev.slice(index + 1),
+        ...prev,
       ]
     })
     setNextSlabNumber((n) => n + 1)
+    requestAnimationFrame(() => widthInputRefs.current[`__new__${nextSlabNumber}`]?.focus())
   }
 
   function removeRow(index: number) {
-    setLocalSlabs((prev) => prev.filter((_, i) => i !== index))
+    setSlabToRemove(localSlabs[index])
+  }
+
+  function confirmRemoveSlab() {
+    if (!slabToRemove) return
+    setLocalSlabs((prev) => prev.filter((slab) => slab.id !== slabToRemove.id))
+    setSlabToRemove(null)
   }
 
   useImperativeHandle(ref, () => ({
@@ -178,23 +189,37 @@ const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
           ) : (
             localSlabs.map((slab, index) => (
               <TableRow key={slab.id}>
-                <TableCell className="text-sm font-medium">{index + 1}</TableCell>
+                <TableCell className="text-sm font-medium">{slab.slabNumber}</TableCell>
                 <TableCell>
                   <Input
+                    ref={(element) => { widthInputRefs.current[String(slab.id)] = element }}
                     type="number"
                     step="0.01"
                     value={slab.width || ''}
                     onChange={(e) => handleFieldChange(index, 'width', e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        heightInputRefs.current[String(slab.id)]?.focus()
+                      }
+                    }}
                     className="h-8 w-24 print:hidden"
                   />
                   <span className="hidden print:inline text-sm">{slab.width || '-'}</span>
                 </TableCell>
                 <TableCell>
                   <Input
+                    ref={(element) => { heightInputRefs.current[String(slab.id)] = element }}
                     type="number"
                     step="0.01"
                     value={slab.height || ''}
                     onChange={(e) => handleFieldChange(index, 'height', e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        if (slab.width > 0 && slab.height > 0) addRow()
+                      }
+                    }}
                     className="h-8 w-24 print:hidden"
                   />
                   <span className="hidden print:inline text-sm">{slab.height || '-'}</span>
@@ -235,6 +260,20 @@ const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
           </TableRow>
         )}
       </Table>
+      <Dialog open={slabToRemove !== null} onOpenChange={(open) => { if (!open) setSlabToRemove(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove slab?</DialogTitle>
+            <DialogDescription>
+              Slab {slabToRemove?.slabNumber} for {product.name} will be removed when you save this measurement.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSlabToRemove(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmRemoveSlab}>Remove slab</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 })
@@ -267,6 +306,7 @@ function MeasurementDetailPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedInDialog, setSelectedInDialog] = useState<Set<number>>(new Set())
   const [isSaved, setIsSaved] = useState(false)
+  const [pendingRemoval, setPendingRemoval] = useState<PendingRemoval | null>(null)
 
   useEffect(() => {
     if (measurement) {
@@ -322,7 +362,38 @@ function MeasurementDetailPage() {
   }
 
   function removeProduct(productId: number) {
+    const slabs = tableRefs.current[productId]?.getSlabs() ?? []
+    const populatedSlabs = slabs.filter((slab) => slab.width > 0 || slab.height > 0).length
+    const product = products.find((item: any) => item.id === productId)
+    if (populatedSlabs > 0) {
+      setPendingRemoval({
+        kind: 'product',
+        productId,
+        productName: product?.name ?? 'product',
+        slabCount: populatedSlabs,
+      })
+      return
+    }
     setAddedProductIds((prev) => prev.filter((id) => id !== productId))
+  }
+
+  async function confirmPendingRemoval() {
+    const removal = pendingRemoval
+    setPendingRemoval(null)
+    if (!removal) return
+
+    if (removal.kind === 'product') {
+      setAddedProductIds((prev) => prev.filter((id) => id !== removal.productId))
+      return
+    }
+
+    try {
+      await deleteMeasurement.mutateAsync(measurementId)
+      navigate({ to: '/measurements' })
+    } catch (error) {
+      console.error(error)
+      alert('Failed to delete measurement')
+    }
   }
 
   async function saveAll() {
@@ -368,14 +439,11 @@ function MeasurementDetailPage() {
         }
       }
 
-      const removedProductIds = new Set(
-        slabsFromApi
-          .filter((s: any) => !addedProductIds.includes(s.productId))
-          .map((s: any) => s.productId),
-      )
-
       for (const slab of slabsFromApi) {
-        if (removedProductIds.has(slab.productId)) {
+        const table = tableRefs.current[slab.productId]
+        const productRemoved = !addedProductIds.includes(slab.productId)
+        const slabRemoved = table !== undefined && !table.getSlabs().some((localSlab) => localSlab.id === slab.id)
+        if (productRemoved || slabRemoved) {
           promises.push(
             new Promise((resolve, reject) => {
               deleteSlab.mutate({ id: slab.id, productId: slab.productId }, { onSuccess: resolve, onError: reject })
@@ -384,7 +452,7 @@ function MeasurementDetailPage() {
         }
       }
 
-      await Promise.allSettled(promises)
+      await Promise.all(promises)
       setIsSaved(true)
     } catch (error) {
       console.error(error)
@@ -392,23 +460,16 @@ function MeasurementDetailPage() {
     }
   }
 
-  async function handleDelete() {
-    if (!window.confirm('Delete this measurement? This will also delete its slabs.')) return
-    try {
-      await deleteMeasurement.mutateAsync(measurementId)
-      navigate({ to: '/measurements' })
-    } catch (error) {
-      console.error(error)
-      alert('Failed to delete measurement')
-    }
+  function handleDelete() {
+    setPendingRemoval({ kind: 'measurement' })
   }
 
   function printPage() {
     const tables = addedProducts.map((p: any) => {
-      const slabs = slabsByProduct[p.id] ?? []
+      const slabs = [...(slabsByProduct[p.id] ?? [])].sort((a, b) => a.slabNumber - b.slabNumber)
       const headers = ['Slab No', 'Width (in)', 'Height (in)', 'Area (sq.ft)']
-      const rows = slabs.map((s: SlabRow, i: number) => [
-        i + 1,
+      const rows = slabs.map((s: SlabRow) => [
+        s.slabNumber,
         s.width || '',
         s.height || '',
         formatAreaValue(s.area),
@@ -629,6 +690,28 @@ function MeasurementDetailPage() {
       }
     >
       <div className="space-y-4">
+        <Dialog open={pendingRemoval !== null} onOpenChange={(open) => { if (!open) setPendingRemoval(null) }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {pendingRemoval?.kind === 'measurement'
+                  ? 'Delete measurement?'
+                  : 'Remove product and slabs?'}
+              </DialogTitle>
+              <DialogDescription>
+                {pendingRemoval?.kind === 'measurement'
+                  ? 'This measurement and all of its slabs will be permanently deleted.'
+                  : `This will remove ${pendingRemoval?.slabCount ?? 0} slab(s) for ${pendingRemoval?.kind === 'product' ? pendingRemoval.productName : ''} when you save.`}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPendingRemoval(null)}>Cancel</Button>
+              <Button variant="destructive" onClick={confirmPendingRemoval}>
+                {pendingRemoval?.kind === 'measurement' ? 'Delete measurement' : 'Remove product'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <div className="flex items-end gap-4 print:hidden">
           <div className="flex-1 space-y-1.5">
             <Label htmlFor="measurement-name">Measurement Name</Label>
