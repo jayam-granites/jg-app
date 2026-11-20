@@ -1,0 +1,15 @@
+.git
+.gitignore
+.vscode
+.agents
+**/.DS_Store
+**/node_modules
+**/dist
+**/.tanstack
+**/.wrangler
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+backup/*
+!backup/.gitkeep
+*.md

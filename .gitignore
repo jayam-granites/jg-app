@@ -4,3 +4,5 @@ dist/
 *.tsbuildinfo
 prisma/.shadow/
 .vscode/
+/backup/*
+!/backup/.gitkeep

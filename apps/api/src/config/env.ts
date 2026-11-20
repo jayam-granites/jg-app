@@ -1,4 +1,5 @@
 import { object, string, pipe, minLength, optional, parse } from 'valibot'
+import { normalizeDatabaseUrl } from './database-url'
 
 const envSchema = object({
   DATABASE_URL: pipe(string(), minLength(1, 'DATABASE_URL is required')),
@@ -37,7 +38,7 @@ function validateEnv() {
   }
 
   return {
-    databaseUrl: result.DATABASE_URL,
+    databaseUrl: normalizeDatabaseUrl(result.DATABASE_URL),
     port,
     nodeEnv: result.NODE_ENV,
     logLevel: result.LOG_LEVEL,

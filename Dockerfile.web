@@ -1,0 +1,34 @@
+# syntax=docker/dockerfile:1
+
+FROM oven/bun:1.3.14-slim AS deps
+WORKDIR /app
+COPY package.json bun.lock ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/validators/package.json packages/validators/package.json
+# Needed by the workspace postinstall (prisma generate).
+COPY apps/api/prisma ./apps/api/prisma
+COPY apps/api/prisma.config.ts ./apps/api/prisma.config.ts
+RUN bun install --frozen-lockfile
+
+FROM deps AS source
+ARG VITE_API_URL=http://localhost:3001
+ENV VITE_API_URL=$VITE_API_URL
+# The web app imports API types from @jg-app/api/client, so the whole monorepo is needed.
+COPY . .
+ARG PRISMA_BUILD_DATABASE_URL=postgresql://build:build@localhost:5432/build
+RUN DATABASE_URL="$PRISMA_BUILD_DATABASE_URL" bun run --cwd apps/api prisma generate
+
+FROM source AS development
+ENV NODE_ENV=development
+EXPOSE 80
+CMD ["bun", "run", "--cwd", "apps/web", "dev", "--host", "0.0.0.0", "--port", "80"]
+
+FROM source AS build
+RUN bun run --cwd apps/web build
+
+FROM nginx:1.27-alpine AS production
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+EXPOSE 80

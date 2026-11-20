@@ -3,9 +3,11 @@ import { env } from '#/config/env'
 import { logger } from '#/lib/logger'
 import { expenseSchedulesService } from './expense-schedules.service'
 import { taskRemindersService } from '../tasks/task-reminders.service'
+import { createDailyDatabaseBackup } from '../backups/database-backup'
 
 const expenseScheduleQueue = 'generate-expense-schedules'
 const taskReminderQueue = 'send-task-reminders'
+const databaseBackupQueue = 'daily-database-backup'
 
 export async function startScheduledWorkers() {
   const boss = new PgBoss(env.databaseUrl)
@@ -21,6 +23,23 @@ export async function startScheduledWorkers() {
       logger.info(result, 'Processed due expense schedules')
     })
     await boss.schedule(expenseScheduleQueue, '0 0 * * *', {}, {
+      tz: env.expenseScheduleTimeZone,
+      missed: 'once',
+    })
+
+    await boss.createQueue(databaseBackupQueue, {
+      retryLimit: 3,
+      retryDelay: 300,
+      retryBackoff: true,
+    })
+    await boss.work(databaseBackupQueue, async () => {
+      const backupPath = await createDailyDatabaseBackup(
+        env.databaseUrl,
+        env.expenseScheduleTimeZone,
+      )
+      logger.info({ backupPath }, 'Created daily database backup')
+    })
+    await boss.schedule(databaseBackupQueue, '0 0 * * *', {}, {
       tz: env.expenseScheduleTimeZone,
       missed: 'once',
     })

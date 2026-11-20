@@ -1,0 +1,23 @@
+# Overlay for local development: hot reload + migrations on API start.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+services:
+  api:
+    build:
+      target: development
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./apps/api/src:/app/apps/api/src
+      - ./apps/api/prisma:/app/apps/api/prisma
+      - ./packages:/app/packages
+      - backup-data:/app/backup
+    command: ["sh", "-c", "bun run --cwd apps/api prisma migrate deploy && bun run --cwd apps/api dev"]
+
+  web:
+    build:
+      target: development
+    volumes:
+      - ./apps/web/src:/app/apps/web/src
+      - ./apps/web/index.html:/app/apps/web/index.html
+      - ./apps/web/vite.config.ts:/app/apps/web/vite.config.ts
+      - ./packages:/app/packages

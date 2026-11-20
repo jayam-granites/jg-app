@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+
+# Debian-slim base keeps Prisma's glibc engine and pg_dump (daily backups) available.
+FROM oven/bun:1.3.14-slim AS base
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates \
+       curl \
+       openssl \
+       postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+FROM base AS deps
+COPY package.json bun.lock ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/validators/package.json packages/validators/package.json
+# Needed by the API's postinstall (prisma generate).
+COPY apps/api/prisma ./apps/api/prisma
+COPY apps/api/prisma.config.ts ./apps/api/prisma.config.ts
+RUN bun install --frozen-lockfile
+
+FROM deps AS source
+COPY tsconfig.base.json ./
+COPY apps/api ./apps/api
+COPY packages ./packages
+# Prisma Client must be generated before the server (or the web typecheck) runs.
+ARG PRISMA_BUILD_DATABASE_URL=postgresql://build:build@localhost:5432/build
+RUN DATABASE_URL="$PRISMA_BUILD_DATABASE_URL" bun run --cwd apps/api prisma generate
+
+FROM source AS development
+ENV NODE_ENV=development
+EXPOSE 3001
+CMD ["bun", "run", "--cwd", "apps/api", "dev"]
+
+FROM source AS production
+ENV NODE_ENV=production
+RUN mkdir -p /app/backup
+EXPOSE 3001
+# Apply committed migrations before serving; pg-boss schedules the daily backup job.
+CMD ["sh", "-c", "bun run --cwd apps/api prisma migrate deploy && bun run --cwd apps/api start"]

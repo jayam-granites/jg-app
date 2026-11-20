@@ -1,4 +1,4 @@
-.PHONY: dev dev-api dev-web build lint typecheck clean setup db-generate db-push db-migrate db-studio db-seed
+.PHONY: dev dev-api dev-web build lint typecheck clean setup db-generate db-push db-migrate db-studio db-seed docker-up docker-down docker-dev docker-logs docker-seed
 
 dev:
 	bun run dev
@@ -25,7 +25,6 @@ clean:
 
 setup:
 	bun install
-	bun run --cwd apps/api prisma:generate
 
 # Prisma commands
 db-generate:
@@ -42,3 +41,19 @@ db-studio:
 
 db-seed:
 	bun run --cwd apps/api prisma:seed
+
+# Docker
+docker-up:
+	docker compose up -d --build
+
+docker-down:
+	docker compose down
+
+docker-dev:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+docker-logs:
+	docker compose logs -f
+
+docker-seed:
+	docker compose run --rm api bun run --cwd apps/api prisma:seed

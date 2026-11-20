@@ -56,32 +56,32 @@ const SETTINGS: { key: string; value: string }[] = [
 ]
 
 async function main() {
-  const testAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase()
-  const testAdminPassword = process.env.SEED_ADMIN_PASSWORD
-  const testAdminName = process.env.SEED_ADMIN_NAME?.trim() || 'Admin'
-  const testAdminRole = process.env.SEED_ADMIN_ROLE ?? 'admin'
+  const superAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase()
+  const superAdminPassword = process.env.SEED_ADMIN_PASSWORD
+  const superAdminName = process.env.SEED_ADMIN_NAME?.trim() || 'Super Admin'
+  const superAdminRole = process.env.SEED_ADMIN_ROLE ?? 'super_admin'
 
-  if (testAdminEmail && testAdminPassword) {
-    if (!isAppRole(testAdminRole)) {
-      throw new Error(`Invalid SEED_ADMIN_ROLE: ${testAdminRole}`)
+  if (superAdminEmail && superAdminPassword) {
+    if (!isAppRole(superAdminRole)) {
+      throw new Error(`Invalid SEED_ADMIN_ROLE: ${superAdminRole}`)
     }
 
     const user = await prisma.user.upsert({
-      where: { email: testAdminEmail },
+      where: { email: superAdminEmail },
       update: {
-        name: testAdminName,
-        role: testAdminRole,
+        name: superAdminName,
+        role: superAdminRole,
         emailVerified: true,
       },
       create: {
-        name: testAdminName,
-        email: testAdminEmail,
+        name: superAdminName,
+        email: superAdminEmail,
         emailVerified: true,
-        role: testAdminRole,
+        role: superAdminRole,
       },
     })
     const context = await auth.$context
-    const password = await context.password.hash(testAdminPassword)
+    const password = await context.password.hash(superAdminPassword)
     const credential = await prisma.authAccount.findFirst({
       where: { userId: user.id, providerId: 'credential' },
       select: { id: true },
@@ -103,11 +103,11 @@ async function main() {
       })
     }
 
-    console.log(`Seeded test admin: ${testAdminEmail}`)
-  } else if (testAdminEmail || testAdminPassword) {
-    throw new Error('Set both SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to seed the test admin')
+    console.log(`Seeded super admin: ${superAdminEmail}`)
+  } else if (superAdminEmail || superAdminPassword) {
+    throw new Error('Set both SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to seed the super admin')
   } else {
-    console.log('Skipping test admin; set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to enable it')
+    console.log('Skipping super admin; set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to enable it')
   }
 
   await prisma.user.upsert({
