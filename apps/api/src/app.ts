@@ -6,11 +6,14 @@ import { authMiddleware } from '#/middleware/auth'
 import { errorMiddleware } from '#/middleware/error'
 import { loggerMiddleware } from '#/middleware/logger'
 import { logger } from '#/lib/logger'
+import { runWithRequestPrisma } from '#/lib/prisma'
 import { env } from '#/config/env'
 import { Scalar } from '@scalar/hono-api-reference'
 import { createApiDocument } from './api-document'
 
 const app = new Hono()
+  // Must run first: binds a fresh Prisma client to each request on Workers.
+  .use('/api/*', async (_c, next) => runWithRequestPrisma(() => next()))
   .use('/api/*', cors({ origin: env.webOrigin, credentials: true }))
   .use('/api/*', secureHeaders())
   .use('/api/*', loggerMiddleware)

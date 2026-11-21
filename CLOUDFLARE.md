@@ -85,9 +85,20 @@ Expense-schedule generation, task reminders, and daily database backups are star
 
 Keep at least one persistent Bun or Docker API instance running for those jobs (see `DOCKER.md` and `BACKUPS.md`). The Cloudflare API Worker serves HTTP requests only.
 
+## Request-scoped Prisma client (important)
+
+Prisma uses the `pg` driver adapter, which opens TCP connections. Workers freeze isolates between requests, so a module-scoped `pg.Pool` keeps stale sockets that hang on the next request until Cloudflare kills it with:
+
+```
+The Workers runtime canceled this request because it detected that your Worker's code had hung and would never generate a response.
+```
+
+`apps/api/src/lib/prisma.ts` exports a stable proxy that resolves to a **fresh client per request** on Workers, wired up by the first `/api/*` middleware in `apps/api/src/app.ts`. Local Bun (dev server, seed, scheduled jobs) keeps one long-lived client. Do not replace that middleware with a module-level singleton.
+
 ## Validation performed
 
 - `bun run typecheck` — passes
 - `bun run --cwd apps/web build` — passes
 - `wrangler deploy --dry-run` for both apps — passes
 - Prisma client generated with `engineType = "client"` and a live query verified
+- 60+ sequential/concurrent authenticated DB requests through the deployed Web Worker, plus requests after an idle pause — all `200` (previously ~50% returned `500` with error 1101)
