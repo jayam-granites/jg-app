@@ -1,5 +1,6 @@
 import { prisma } from '#/lib/prisma'
 import type { CreateProductDto, UpdateProductDto, Product } from '@jg-app/shared'
+import { allocateVariantSkus, loadSkuAttributes, withSkuRetry } from './sku-allocation'
 
 const productSelect = {
   id: true,
@@ -43,121 +44,145 @@ export const productRepository = {
   },
 
   async createWithVariants(data: CreateProductDto): Promise<Product> {
-    return prisma.$transaction(async (tx) => {
-      const product = await tx.product.create({
-        data: {
-          name: data.name,
-          categoryId: data.categoryId,
-          description: data.description ?? null,
-          hsnCode: data.hsnCode ?? null,
-          lotNumber: data.lotNumber ?? null,
-          widthReduction: data.widthReduction ?? null,
-          variants: {
-            create: data.variants.map((v) => ({
-              skuCode: v.skuCode,
-              unitId: v.unitId,
-              secondaryUnitId: v.secondaryUnitId ?? null,
-              mrp: 0,
-              sellingPrice: 0,
-              isActive: true,
-              attributes: v.attributes?.length
-                ? {
-                    create: v.attributes.map((a) => ({
-                      attributeId: a.attributeId,
-                      attributeValueId: a.attributeValueId,
-                    })),
-                  }
-                : undefined,
-            })),
-          },
-        },
-        select: productSelect,
+    const attributes = await loadSkuAttributes(data.variants)
+
+    return withSkuRetry(async (reserved, record) => {
+      const { skus } = await allocateVariantSkus({
+        productName: data.name,
+        variants: data.variants,
+        attributes,
+        reserved,
       })
-      return product as unknown as Product
+      record(skus)
+
+      return prisma.$transaction(async (tx) => {
+        const product = await tx.product.create({
+          data: {
+            name: data.name,
+            categoryId: data.categoryId,
+            description: data.description ?? null,
+            hsnCode: data.hsnCode ?? null,
+            lotNumber: data.lotNumber ?? null,
+            widthReduction: data.widthReduction ?? null,
+            variants: {
+              create: data.variants.map((v, index) => ({
+                skuCode: skus[index],
+                unitId: v.unitId,
+                secondaryUnitId: v.secondaryUnitId ?? null,
+                mrp: 0,
+                sellingPrice: 0,
+                isActive: true,
+                attributes: v.attributes?.length
+                  ? {
+                      create: v.attributes.map((a) => ({
+                        attributeId: a.attributeId,
+                        attributeValueId: a.attributeValueId,
+                      })),
+                    }
+                  : undefined,
+              })),
+            },
+          },
+          select: productSelect,
+        })
+        return product as unknown as Product
+      })
     })
   },
 
   async updateWithVariants(id: number, data: UpdateProductDto): Promise<Product> {
-    return prisma.$transaction(async (tx) => {
-      const existingVariantIds = (
-        await tx.productVariant.findMany({
-          where: { productId: id },
-          select: { id: true },
-        })
-      ).map((v) => v.id)
+    const attributes = await loadSkuAttributes(data.variants)
 
-      const incomingIds = data.variants.filter((v) => v.id).map((v) => v.id!) as number[]
-      const toDelete = existingVariantIds.filter((vid) => !incomingIds.includes(vid))
-
-      if (toDelete.length > 0) {
-        await tx.productVariantAttribute.deleteMany({
-          where: { productVariantId: { in: toDelete } },
-        })
-        await tx.productVariant.deleteMany({
-          where: { id: { in: toDelete } },
-        })
-      }
-
-      await tx.product.update({
-        where: { id },
-        data: {
-          name: data.name,
-          categoryId: data.categoryId,
-          description: data.description ?? null,
-          hsnCode: data.hsnCode ?? null,
-          lotNumber: data.lotNumber ?? null,
-          widthReduction: data.widthReduction ?? null,
-        },
+    return withSkuRetry(async (reserved, record) => {
+      const { skus } = await allocateVariantSkus({
+        productName: data.name,
+        variants: data.variants,
+        attributes,
+        reserved,
       })
+      record(skus)
 
-      for (const v of data.variants) {
-        if (v.id) {
+      return prisma.$transaction(async (tx) => {
+        const existingVariantIds = (
+          await tx.productVariant.findMany({
+            where: { productId: id },
+            select: { id: true },
+          })
+        ).map((v) => v.id)
+
+        const incomingIds = data.variants.filter((v) => v.id).map((v) => v.id!) as number[]
+        const toDelete = existingVariantIds.filter((vid) => !incomingIds.includes(vid))
+
+        if (toDelete.length > 0) {
           await tx.productVariantAttribute.deleteMany({
-            where: { productVariantId: v.id },
+            where: { productVariantId: { in: toDelete } },
           })
-          await tx.productVariant.update({
-            where: { id: v.id },
-            data: {
-              skuCode: v.skuCode,
-              unitId: v.unitId,
-              secondaryUnitId: v.secondaryUnitId ?? null,
-              attributes: v.attributes?.length
-                ? {
-                    create: v.attributes.map((a) => ({
-                      attributeId: a.attributeId,
-                      attributeValueId: a.attributeValueId,
-                    })),
-                  }
-                : undefined,
-            },
-          })
-        } else {
-          await tx.productVariant.create({
-            data: {
-              productId: id,
-              skuCode: v.skuCode,
-              unitId: v.unitId,
-              secondaryUnitId: v.secondaryUnitId ?? null,
-              mrp: 0,
-              sellingPrice: 0,
-              isActive: true,
-              attributes: v.attributes?.length
-                ? {
-                    create: v.attributes.map((a) => ({
-                      attributeId: a.attributeId,
-                      attributeValueId: a.attributeValueId,
-                    })),
-                  }
-                : undefined,
-            },
+          await tx.productVariant.deleteMany({
+            where: { id: { in: toDelete } },
           })
         }
-      }
 
-      return tx.product.findUnique({
-        where: { id },
-        select: productSelect,
-      }) as unknown as Promise<Product>
+        await tx.product.update({
+          where: { id },
+          data: {
+            name: data.name,
+            categoryId: data.categoryId,
+            description: data.description ?? null,
+            hsnCode: data.hsnCode ?? null,
+            lotNumber: data.lotNumber ?? null,
+            widthReduction: data.widthReduction ?? null,
+          },
+        })
+
+        for (const [index, v] of data.variants.entries()) {
+          if (v.id) {
+            await tx.productVariantAttribute.deleteMany({
+              where: { productVariantId: v.id },
+            })
+            await tx.productVariant.update({
+              where: { id: v.id },
+              data: {
+                skuCode: skus[index],
+                unitId: v.unitId,
+                secondaryUnitId: v.secondaryUnitId ?? null,
+                attributes: v.attributes?.length
+                  ? {
+                      create: v.attributes.map((a) => ({
+                        attributeId: a.attributeId,
+                        attributeValueId: a.attributeValueId,
+                      })),
+                    }
+                  : undefined,
+              },
+            })
+          } else {
+            await tx.productVariant.create({
+              data: {
+                productId: id,
+                skuCode: skus[index],
+                unitId: v.unitId,
+                secondaryUnitId: v.secondaryUnitId ?? null,
+                mrp: 0,
+                sellingPrice: 0,
+                isActive: true,
+                attributes: v.attributes?.length
+                  ? {
+                      create: v.attributes.map((a) => ({
+                        attributeId: a.attributeId,
+                        attributeValueId: a.attributeValueId,
+                      })),
+                    }
+                  : undefined,
+              },
+            })
+          }
+        }
+
+        return tx.product.findUnique({
+          where: { id },
+          select: productSelect,
+        }) as unknown as Promise<Product>
+      })
     })
   },
 

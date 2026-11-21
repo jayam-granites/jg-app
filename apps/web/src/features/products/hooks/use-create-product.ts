@@ -49,6 +49,18 @@ export function useAttributes() {
   })
 }
 
+export function useAllAttributeValues() {
+  return useQuery({
+    queryKey: ['masters', 'attribute-values', 'all'],
+    queryFn: async () => {
+      const res = await (api.api.masters['attribute-values'].$get({}) as Promise<Response>)
+      return res.json() as Promise<{
+        data: { id: number; value: string; attributeId: number }[]
+      }>
+    },
+  })
+}
+
 export function useAttributeValues(attributeId: number | null) {
   return useQuery({
     queryKey: ['masters', 'attribute-values', attributeId],

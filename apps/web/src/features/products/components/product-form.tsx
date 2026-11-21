@@ -10,7 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
-import { useUnits, useCategoryAttributes, useAttributeValues } from '../hooks/use-create-product'
+import {
+  useUnits,
+  useCategoryAttributes,
+  useAttributeValues,
+  useAllAttributeValues,
+} from '../hooks/use-create-product'
+import { buildSkuBase, formatSku, type SkuAttribute } from '@jg-app/shared'
 import { useCategories, useCreateCategory } from '@/features/masters/hooks/use-masters'
 
 type VariantAttr = { attributeId: number; attributeValueId: number; id?: number }
@@ -67,6 +73,19 @@ export function ProductForm({
   const parsedCategoryId = categoryId ? Number(categoryId) : null
   const { data: linkedAttrsRes } = useCategoryAttributes(parsedCategoryId)
   const linkedAttributes = (linkedAttrsRes as any)?.data ?? []
+  const { data: allAttributeValuesRes } = useAllAttributeValues()
+
+  const skuAttributesFor = (
+    combo: { attributeId: number; attributeValueId: number }[],
+  ): SkuAttribute[] =>
+    combo.map((item) => {
+      const attribute = linkedAttributes.find((candidate: any) => candidate.id === item.attributeId)
+      return {
+        code: attribute?.code ?? null,
+        name: attribute?.name ?? null,
+        value: allAttributeValuesRes?.data?.find((value) => value.id === item.attributeValueId)?.value ?? null,
+      }
+    })
 
   const [variants, setVariants] = useState<VariantForm[]>(
     initialData?.variants?.length
@@ -130,11 +149,10 @@ export function ProductForm({
     )
 
     const combinations = cartesian(valueArrays)
-    const prefix = name.trim().slice(0, 3).toUpperCase() || 'PRD'
     const existingCount = variants.length
 
     const newVariants: VariantForm[] = combinations.map((combo, i) => ({
-      skuCode: `${prefix}-${(existingCount + i + 1).toString().padStart(3, '0')}`,
+      skuCode: formatSku(buildSkuBase(name, skuAttributesFor(combo)), existingCount + i + 1),
       unitId: defaultUnitId,
       secondaryUnitId: defaultSecondaryUnitId || null,
       attributes: combo,
@@ -144,10 +162,13 @@ export function ProductForm({
   }
 
   function generateSku() {
-    const prefix = name.trim().slice(0, 2).toUpperCase()
-    return prefix || name
-      ? `${prefix || 'PRD'}-${Date.now().toString(36).toUpperCase()}`
-      : ''
+    const combo = Object.entries(manualAttrs)
+      .filter(([, valueId]) => valueId > 0)
+      .map(([attributeId, attributeValueId]) => ({
+        attributeId: Number(attributeId),
+        attributeValueId,
+      }))
+    return formatSku(buildSkuBase(name, skuAttributesFor(combo)), 1)
   }
 
   function handleAddManual() {
