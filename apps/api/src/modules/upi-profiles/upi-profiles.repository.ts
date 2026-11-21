@@ -10,7 +10,8 @@ type UpiProfileData = {
 
 async function lockDefaultProfile(transaction: Prisma.TransactionClient) {
   // Serialize default changes; the partial unique index is the final integrity guard.
-  await transaction.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('upi_profile_default'))`
+  // Advisory locks return void, so $executeRaw is required (not $queryRaw).
+  await transaction.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('upi_profile_default'))`
 }
 
 function throwOnDefaultConflict(error: unknown): never {

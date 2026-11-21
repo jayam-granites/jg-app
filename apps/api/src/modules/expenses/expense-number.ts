@@ -28,7 +28,8 @@ export async function allocateNextExpenseNumber(
   expenseDate: Date,
 ): Promise<string> {
   const prefix = expenseNumberPrefix(expenseDate)
-  await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${prefix}))`)
+  // Advisory locks return void, which $queryRaw cannot deserialize. Use $executeRaw.
+  await tx.$executeRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${prefix}))`)
 
   const expenseNumbers = await tx.expense.findMany({
     where: { expenseNumber: { startsWith: prefix } },
