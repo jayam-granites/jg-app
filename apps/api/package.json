@@ -18,12 +18,15 @@
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "bun run prisma/seed.ts"
+    "prisma:seed": "bun run prisma/seed.ts",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
   },
   "dependencies": {
     "@hono/valibot-validator": "^0.5.3",
     "@jg-app/shared": "workspace:*",
     "@jg-app/validators": "workspace:*",
+    "@prisma/adapter-pg": "6.19.3",
     "@prisma/client": "^6.19.3",
     "@scalar/hono-api-reference": "^0.12.20",
     "better-auth": "^1.7.18",
@@ -40,6 +43,7 @@
     "@types/node": "^22.19.19",
     "dotenv": "^18.0.10",
     "prisma": "^6.19.3",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "wrangler": "^4.166.0"
   }
 }

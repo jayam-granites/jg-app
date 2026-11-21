@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  // Client engine (no Rust binary) so the generated client runs on Cloudflare Workers.
+  // Requires a driver adapter - see src/lib/prisma.ts.
+  engineType = "client"
 }
 
 datasource db {

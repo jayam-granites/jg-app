@@ -2,7 +2,7 @@
 
 The long-running API server creates a PostgreSQL custom-format dump every day at midnight in `EXPENSE_SCHEDULE_TIME_ZONE` (default: `Asia/Kolkata`). Dumps are saved in the repository root's `backup/` folder as `YYYY-MM-DD.dump`; a failed dump is retried by `pg-boss`. Backup files are ignored by Git.
 
-Run the API as a persistent Bun process with `bun run --cwd apps/api start`. The server must have the PostgreSQL client utility `pg_dump` installed and the `DATABASE_URL` environment variable configured. The scheduled job does not run in Vercel serverless functions, and their local filesystem is not a durable backup destination.
+Run the API as a persistent Bun process with `bun run --cwd apps/api start` (or via Docker Compose). The server must have the PostgreSQL client utility `pg_dump` installed and the `DATABASE_URL` environment variable configured. Scheduled jobs run in this long-lived process only; they do **not** run on Cloudflare Workers, and a Worker's ephemeral filesystem is not a durable backup destination. Keep at least one Bun/Docker API instance running for backups and other scheduled tasks.
 
 The custom-format dump includes the database schema and data. Restore it with PostgreSQL's `pg_restore` utility, for example:
 

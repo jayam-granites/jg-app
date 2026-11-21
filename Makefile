@@ -1,4 +1,4 @@
-.PHONY: dev dev-api dev-web build lint typecheck clean setup db-generate db-push db-migrate db-studio db-seed docker-up docker-down docker-dev docker-logs docker-seed
+.PHONY: dev dev-api dev-web build lint typecheck clean setup db-generate db-push db-migrate db-studio db-seed docker-up docker-down docker-dev docker-logs docker-seed deploy deploy-api deploy-web
 
 dev:
 	bun run dev
@@ -57,3 +57,13 @@ docker-logs:
 
 docker-seed:
 	docker compose run --rm api bun run --cwd apps/api prisma:seed
+
+# Cloudflare Workers
+deploy:
+	bun run deploy
+
+deploy-api:
+	bun run deploy:api
+
+deploy-web:
+	bun run deploy:web

@@ -1,0 +1,27 @@
+{
+  // Cloudflare Worker for the Hono API.
+  // Deploy from THIS directory: cd apps/api && bun run deploy
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jg-app-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-11-01",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_compat_populate_process_env"
+  ],
+  "observability": {
+    "enabled": true
+  },
+  // Non-secret defaults. Set the two URL vars to your real deployed Web Worker
+  // URL after the first deploy (browsers reach the API through that origin).
+  // Secrets (DATABASE_URL, BETTER_AUTH_SECRET) are set with:
+  //   bun run --cwd apps/api secret:put
+  // See CLOUDFLARE.md for the full checklist.
+  "vars": {
+    "NODE_ENV": "production",
+    "LOG_LEVEL": "info",
+    "BETTER_AUTH_URL": "https://jg-app-web.jayam-granites.workers.dev",
+    "WEB_ORIGIN": "https://jg-app-web.jayam-granites.workers.dev",
+    "EXPENSE_SCHEDULE_TIME_ZONE": "Asia/Kolkata"
+  }
+}

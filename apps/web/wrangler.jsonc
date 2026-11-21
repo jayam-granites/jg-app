@@ -1,0 +1,27 @@
+{
+  // Cloudflare Worker serving the built Vite SPA (static assets) and proxying
+  // /api/* to the API Worker on the same origin.
+  // Deploy from THIS directory: cd apps/web && bun run deploy
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jg-app-web",
+  "main": "src/worker.ts",
+  "compatibility_date": "2025-11-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Client-side routing: serve index.html for unknown paths instead of 404.
+    "not_found_handling": "single-page-application",
+    // Run our Worker first so it can intercept /api/* before static assets.
+    "run_worker_first": true
+  },
+  // Direct service-to-service call; no public round-trip and no CORS.
+  "services": [
+    {
+      "binding": "API",
+      "service": "jg-app-api"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}
