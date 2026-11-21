@@ -1,6 +1,6 @@
 import { auth } from '../src/lib/auth'
 import { prisma } from '../src/lib/prisma'
-import { isAppRole } from '@jg-app/shared'
+import { type AppRole } from '@jg-app/shared'
 
 const LOOKUP_OPTIONS: {
   group: string
@@ -55,72 +55,65 @@ const SETTINGS: { key: string; value: string }[] = [
   { key: 'invoice.gstPercent', value: '18' },
 ]
 
-async function main() {
-  const superAdminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase()
-  const superAdminPassword = process.env.SEED_ADMIN_PASSWORD
-  const superAdminName = process.env.SEED_ADMIN_NAME?.trim() || 'Super Admin'
-  const superAdminRole = process.env.SEED_ADMIN_ROLE ?? 'super_admin'
+type AdminSeed = {
+  email: string
+  password: string
+  name: string
+  role: AppRole
+}
 
-  if (superAdminEmail && superAdminPassword) {
-    if (!isAppRole(superAdminRole)) {
-      throw new Error(`Invalid SEED_ADMIN_ROLE: ${superAdminRole}`)
-    }
+function readAdminSeed(prefix: 'SEED_SUPER_ADMIN' | 'SEED_ADMIN', role: AppRole): AdminSeed | null {
+  const email = process.env[`${prefix}_EMAIL`]?.trim().toLowerCase()
+  const password = process.env[`${prefix}_PASSWORD`]
+  const name = process.env[`${prefix}_NAME`]?.trim() || (role === 'super_admin' ? 'Super Admin' : 'Admin')
 
-    const user = await prisma.user.upsert({
-      where: { email: superAdminEmail },
-      update: {
-        name: superAdminName,
-        role: superAdminRole,
-        emailVerified: true,
-      },
-      create: {
-        name: superAdminName,
-        email: superAdminEmail,
-        emailVerified: true,
-        role: superAdminRole,
-      },
-    })
-    const context = await auth.$context
-    const password = await context.password.hash(superAdminPassword)
-    const credential = await prisma.authAccount.findFirst({
-      where: { userId: user.id, providerId: 'credential' },
-      select: { id: true },
-    })
-
-    if (credential) {
-      await prisma.authAccount.update({
-        where: { id: credential.id },
-        data: { password },
-      })
-    } else {
-      await prisma.authAccount.create({
-        data: {
-          accountId: user.id,
-          providerId: 'credential',
-          userId: user.id,
-          password,
-        },
-      })
-    }
-
-    console.log(`Seeded super admin: ${superAdminEmail}`)
-  } else if (superAdminEmail || superAdminPassword) {
-    throw new Error('Set both SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to seed the super admin')
-  } else {
-    console.log('Skipping super admin; set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to enable it')
+  if (!email && !password && !process.env[`${prefix}_NAME`]) return null
+  if (!email || !password) {
+    throw new Error(`Set both ${prefix}_EMAIL and ${prefix}_PASSWORD to seed the ${role}`)
   }
 
-  await prisma.user.upsert({
-    where: { email: 'alice@example.com' },
-    update: {},
-    create: { name: 'Alice', email: 'alice@example.com' },
+  return { email, password, name, role }
+}
+
+async function seedAdmin({ email, password, name, role }: AdminSeed) {
+  const user = await prisma.user.upsert({
+    where: { email },
+    update: { name, role, emailVerified: true, isSuspended: false },
+    create: { name, email, emailVerified: true, role },
   })
 
-  await prisma.user.upsert({
-    where: { email: 'bob@example.com' },
-    update: {},
-    create: { name: 'Bob', email: 'bob@example.com' },
+  const context = await auth.$context
+  const hash = await context.password.hash(password)
+  const credential = await prisma.authAccount.findFirst({
+    where: { userId: user.id, providerId: 'credential' },
+    select: { id: true },
   })
+
+  if (credential) {
+    await prisma.authAccount.update({ where: { id: credential.id }, data: { password: hash } })
+  } else {
+    await prisma.authAccount.create({
+      data: {
+        accountId: user.id,
+        providerId: 'credential',
+        userId: user.id,
+        password: hash,
+      },
+    })
+  }
+
+  console.log(`Seeded ${role}: ${email}`)
+}
+
+async function main() {
+  const admins = [
+    readAdminSeed('SEED_SUPER_ADMIN', 'super_admin'),
+    readAdminSeed('SEED_ADMIN', 'admin'),
+  ].filter((admin): admin is AdminSeed => admin !== null)
+
+  for (const admin of admins) {
+    await seedAdmin(admin)
+  }
 
   const optionCount = await prisma.lookupOption.count()
 
@@ -147,7 +140,7 @@ async function main() {
     })
   }
 
-  console.log('Seeded:', { users: ['alice@example.com', 'bob@example.com'], settings: SETTINGS.map((s) => s.key) })
+  console.log('Seeded:', { admins: admins.map((a) => `${a.role}:${a.email}`), settings: SETTINGS.map((s) => s.key) })
 }
 
 main()
