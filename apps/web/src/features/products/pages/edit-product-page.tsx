@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProductForm } from '../components/product-form'
 import { useProduct, useUpdateProduct } from '../hooks/use-products'
+import { PageLoading } from '@/shared/components/page-loading'
 
 export function EditProductPage() {
   const { id } = useParams({ from: '/products/$id/edit' })
@@ -13,23 +14,17 @@ export function EditProductPage() {
 
   const product = (productRes as any)?.data
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-40 text-muted-foreground">
-        Loading...
-      </div>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!product) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/products' })}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Product not found</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Product not found</h1>
           </div>
         </div>
       </div>
@@ -40,10 +35,10 @@ export function EditProductPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/products' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Edit Product</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Edit Product</h1>
           <p className="text-sm text-muted-foreground">{product.name}</p>
         </div>
       </div>

@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, CheckCircle2, FileText, Loader2, MoreHorizontal, Pencil, ReceiptText, Trash2, Truck, Users, Wallet } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, FileText, Loader2, MoreHorizontal, Pencil, ReceiptText, Sparkles, Trash2, Truck, Users, Wallet } from 'lucide-react'
 import { useInvoice, useDeleteInvoicePayment, useDeleteInvoiceCommission } from '../hooks/use-invoices'
 import { useUpdateCustomer } from '@/features/customers/hooks/use-customers'
 import { useLookupOptions, lookupOptionMap, optionColorClasses } from '@/features/masters/hooks/use-lookups'
 import { LOOKUP_GROUPS } from '@jg-app/shared'
 import { previewPdf } from '@/lib/pdf'
-import { formatDate, formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
 import { buildInvoicePdf, buildOriginalBillPdf, buildTransportBillPdf } from '../lib/invoice-pdf'
 import { CloseSaleDialog } from '../components/close-sale-dialog'
 import { BrokerCommissionDialog } from '../components/broker-commission-dialog'
 import { RecordInvoicePaymentDialog } from '../components/record-invoice-payment-dialog'
 import { PageLayout } from '@/shared/components/page-layout'
+import { PageLoading } from '@/shared/components/page-loading'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -19,6 +20,8 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Card } from '@/components/ui/card'
+import { InvoiceInsightDrawer } from '@/features/reports/components/insight-drawer'
+import { useAuth } from '@/providers/auth'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +36,8 @@ function round2(value: number) {
 export function ViewInvoicePage() {
   const { id } = useParams({ from: '/invoices/$id' })
   const navigate = useNavigate()
+  const { hasPermission } = useAuth()
+  const canViewInsights = hasPermission('reports:read')
   const { data: res, isLoading } = useInvoice(Number(id))
   const { data: statusOptionsRes } = useLookupOptions(LOOKUP_GROUPS.INVOICE_STATUS)
   const deletePayment = useDeleteInvoicePayment()
@@ -51,6 +56,7 @@ export function ViewInvoicePage() {
   const [editAddress, setEditAddress] = useState('')
   const [closeSaleOpen, setCloseSaleOpen] = useState(false)
   const [commissionOpen, setCommissionOpen] = useState(false)
+  const [insightOpen, setInsightOpen] = useState(false)
 
   const items = inv?.items ?? []
   const transport = inv?.invoiceTransports?.[0]
@@ -139,13 +145,7 @@ export function ViewInvoicePage() {
     )
   }
 
-  if (isLoading) {
-    return (
-      <PageLayout title="Loading..." description="Loading invoice details">
-        <div className="text-sm text-muted-foreground">Loading...</div>
-      </PageLayout>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!inv) {
     return (
@@ -170,9 +170,19 @@ export function ViewInvoicePage() {
       <div className="space-y-6 print:space-y-4">
         <div className="flex items-center justify-between print:hidden">
           <Button variant="ghost" size="sm" onClick={() => navigate({ to: '/invoices' })} className="gap-1.5">
-            <ArrowLeft className="h-4 w-4" /> Back
+            <ArrowLeft className="size-4" /> Back
           </Button>
           <div className="flex items-center gap-2">
+            {canViewInsights && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInsightOpen(true)}
+                className="gap-1.5"
+              >
+                <Sparkles className="size-4" /> View Insight
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -180,32 +190,32 @@ export function ViewInvoicePage() {
               className="gap-1.5"
               disabled={balance <= 0.001}
             >
-              <Wallet className="h-4 w-4" /> Record Payment
+              <Wallet className="size-4" /> Record Payment
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button variant="outline" size="icon" className="size-8">
+                  <MoreHorizontal className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={previewInvoicePdf}>
-                  <FileText className="mr-2 h-4 w-4" /> Print Bill
+                  <FileText className="mr-2 size-4" /> Print Bill
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={previewTransportBill}>
-                  <Truck className="mr-2 h-4 w-4" /> Print Transport Bill
+                  <Truck className="mr-2 size-4" /> Print Transport Bill
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={previewOriginalBill}>
-                  <ReceiptText className="mr-2 h-4 w-4" /> Print Original Bill
+                  <ReceiptText className="mr-2 size-4" /> Print Original Bill
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setCloseSaleOpen(true)}
                   disabled={inv.status === 'PAID'}
                 >
-                  <CheckCircle2 className="mr-2 h-4 w-4" /> Close Sale
+                  <CheckCircle2 className="mr-2 size-4" /> Close Sale
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setCommissionOpen(true)}>
-                  <Users className="mr-2 h-4 w-4" /> Add Broker Commission
+                  <Users className="mr-2 size-4" /> Add Broker Commission
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -215,15 +225,15 @@ export function ViewInvoicePage() {
         <Card className="p-4 space-y-3">
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-0.5">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Invoice No</div>
+              <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Invoice No</div>
               <div className="font-mono text-lg font-semibold tracking-wide">{inv.invoiceNumber}</div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={`rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium ${optionColorClasses(statusOpt)}`}>
+              <Badge className={`rounded-full border-0 px-2.5 py-0.5 text-xs font-medium ${optionColorClasses(statusOpt)}`}>
                 {statusLabel}
               </Badge>
               {inv.paymentMethod && (
-                <Badge variant="secondary" className="rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium">
+                <Badge variant="secondary" className="rounded-full border-0 px-2.5 py-0.5 text-xs font-medium">
                   {inv.paymentMethod}
                 </Badge>
               )}
@@ -242,11 +252,11 @@ export function ViewInvoicePage() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                  className="size-5 text-muted-foreground hover:text-foreground"
                   onClick={openContactDialog}
                   title="Edit phone and address"
                 >
-                  <Pencil className="h-3 w-3" />
+                  <Pencil className="size-3" />
                 </Button>
               </div>
               <div className="font-medium">{inv.customer?.mobile ?? '—'}</div>
@@ -257,8 +267,14 @@ export function ViewInvoicePage() {
             </div>
             <div>
               <div className="text-muted-foreground">Date</div>
-              <div className="font-medium">{formatDateTime(inv.invoiceDate)}</div>
+              <div className="font-medium">{formatDate(inv.invoiceDate)}</div>
             </div>
+            {inv.isGst && (
+              <div>
+                <div className="text-muted-foreground">GSTIN</div>
+                <div className="font-mono font-medium">{inv.gstNumber || inv.customer?.gstNumber || '—'}</div>
+              </div>
+            )}
           </div>
 
           {transport && (
@@ -285,7 +301,7 @@ export function ViewInvoicePage() {
             </div>
             <div>
               <div className="text-muted-foreground">Received</div>
-              <div className="font-mono font-semibold text-green-700">₹{received.toFixed(2)}</div>
+              <div className="font-mono font-semibold text-success">₹{received.toFixed(2)}</div>
             </div>
             {balance > 0.001 && (
               <div>
@@ -323,7 +339,7 @@ export function ViewInvoicePage() {
                     <TableCell className="text-sm">
                       {item.description}
                       {item.isLoadingApplicable === false && (
-                        <span className="ml-2 text-[10px] uppercase text-muted-foreground">no loading</span>
+                        <span className="ml-2 text-xs uppercase text-muted-foreground">no loading</span>
                       )}
                     </TableCell>
                     <TableCell className="font-mono text-sm">
@@ -389,12 +405,12 @@ export function ViewInvoicePage() {
               <span>Grand Total</span>
               <span className="font-mono">{grandTotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-green-700">
+            <div className="flex justify-between text-success">
               <span>Received</span>
               <span className="font-mono">{received.toFixed(2)}</span>
             </div>
             {discount > 0 && (
-              <div className="flex justify-between text-amber-700">
+              <div className="flex justify-between text-warning">
                 <span>Discount</span>
                 <span className="font-mono">{discount.toFixed(2)}</span>
               </div>
@@ -423,7 +439,7 @@ export function ViewInvoicePage() {
               className="gap-1.5"
               disabled={balance <= 0.001}
             >
-              <Wallet className="h-3.5 w-3.5" /> Add Payment
+              <Wallet className="size-3.5" /> Add Payment
             </Button>
           </div>
           {payments.length > 0 && (
@@ -437,7 +453,7 @@ export function ViewInvoicePage() {
                     <div className="flex items-center gap-2 font-medium">
                       <span className="font-mono">₹{Number(payment.amount).toFixed(2)}</span>
                       {payment.paymentMethod && (
-                        <Badge variant="secondary" className="rounded-full border-0 px-2 py-0 text-[10px] font-medium">
+                        <Badge variant="secondary" className="rounded-full border-0 px-2 py-0 text-xs font-medium">
                           {payment.paymentMethod}
                         </Badge>
                       )}
@@ -453,23 +469,23 @@ export function ViewInvoicePage() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      className="size-7 text-muted-foreground hover:text-destructive"
                       onClick={() => removePayment(Number(payment.id))}
                       title="Delete payment"
                       disabled={deletePayment.isPending}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="size-3.5" />
                     </Button>
                   )}
                 </div>
               ))}
               <div className="flex justify-between border-t px-3 pt-2 text-sm">
                 <span className="text-muted-foreground">Total Received</span>
-                <span className="font-mono font-semibold text-green-700">₹{received.toFixed(2)}</span>
+                <span className="font-mono font-semibold text-success">₹{received.toFixed(2)}</span>
               </div>
               <div className="flex justify-between px-3 text-sm">
                 <span className="text-muted-foreground">Balance Due</span>
-                <span className={`font-mono font-semibold ${balance > 0.001 ? 'text-destructive' : 'text-green-700'}`}>
+                <span className={`font-mono font-semibold ${balance > 0.001 ? 'text-destructive' : 'text-success'}`}>
                   ₹{Math.max(balance, 0).toFixed(2)}
                 </span>
               </div>
@@ -482,7 +498,7 @@ export function ViewInvoicePage() {
             <div className="mb-2 flex items-center justify-between">
               <div className="text-xs text-muted-foreground uppercase tracking-wide">Broker Commissions</div>
               <Button variant="outline" size="sm" onClick={() => setCommissionOpen(true)} className="gap-1.5">
-                <Users className="h-3.5 w-3.5" /> Add
+                <Users className="size-3.5" /> Add
               </Button>
             </div>
             <div className="space-y-2">
@@ -501,11 +517,11 @@ export function ViewInvoicePage() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      className="size-7 text-muted-foreground hover:text-destructive"
                       onClick={() => removeCommission(Number(commission.id))}
                       title="Remove commission"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Trash2 className="size-3.5" />
                     </Button>
                   </div>
                 </div>
@@ -542,7 +558,7 @@ export function ViewInvoicePage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setContactOpen(false)}>Cancel</Button>
             <Button onClick={saveContactDetails} disabled={updateCustomer.isPending}>
-              {updateCustomer.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save'}
+              {updateCustomer.isPending ? <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</> : 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -554,6 +570,11 @@ export function ViewInvoicePage() {
         grandTotal={grandTotal}
         open={commissionOpen}
         onOpenChange={setCommissionOpen}
+      />
+      <InvoiceInsightDrawer
+        invoiceId={Number(id)}
+        open={insightOpen}
+        onOpenChange={setInsightOpen}
       />
     </PageLayout>
   )

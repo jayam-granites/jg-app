@@ -80,7 +80,7 @@ function monthKey(date: Date): string {
 }
 
 function monthLabel(date: Date): string {
-  return `${date.toLocaleString('en-US', { month: 'short' })} '${String(date.getFullYear()).slice(2)}`
+  return `${date.toLocaleString('en-US', { month: 'short' })} ${date.getFullYear()}`
 }
 
 function buildMetric(value: number, previous: number): DashboardMetric {

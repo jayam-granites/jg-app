@@ -58,13 +58,13 @@ export function DatePicker({
           id={id}
           disabled={disabled}
           className={cn(
-            'flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
+            'flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-all duration-150 ease-out hover:border-border focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50',
             !value && 'text-muted-foreground',
             className,
           )}
         >
           <span>{selected ? selected.format('DD MMM YYYY') : placeholder}</span>
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <CalendarDays className="size-4 text-muted-foreground" />
         </button>
       </PopoverTrigger>
       <PopoverContent>
@@ -72,17 +72,17 @@ export function DatePicker({
           <button
             type="button"
             onClick={() => setViewDate((prev) => prev.subtract(1, 'month'))}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="size-4" />
           </button>
           <span className="text-sm font-medium">{viewDate.format('MMMM YYYY')}</span>
           <button
             type="button"
             onClick={() => setViewDate((prev) => prev.add(1, 'month'))}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="size-4" />
           </button>
         </div>
 
@@ -90,7 +90,7 @@ export function DatePicker({
           {WEEKDAYS.map((day) => (
             <span
               key={day}
-              className="flex h-7 items-center justify-center text-[10px] font-medium uppercase text-muted-foreground"
+              className="flex h-7 items-center justify-center text-xs font-medium uppercase text-muted-foreground"
             >
               {day}
             </span>
@@ -105,7 +105,7 @@ export function DatePicker({
                 type="button"
                 onClick={() => selectDay(day)}
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-md text-xs transition-colors hover:bg-muted',
+                  'flex size-8 items-center justify-center rounded-md text-xs transition-colors duration-150 ease-out hover:bg-muted/60',
                   isToday && !isSelected && 'font-semibold text-primary',
                   isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90',
                 )}
@@ -120,7 +120,7 @@ export function DatePicker({
           <button
             type="button"
             onClick={() => selectDay(dayjs())}
-            className="rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-muted"
+            className="rounded-md px-2 py-1 text-xs font-medium text-primary transition-colors duration-150 ease-out hover:bg-muted"
           >
             Today
           </button>

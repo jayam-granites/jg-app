@@ -7,7 +7,7 @@ import type { DataTableRowAction } from '@/shared/components/data-table'
 import { PageLayout } from '@/shared/components/page-layout'
 import { Button } from '@/components/ui/button'
 import { usePurchaseReceipts, useDeletePurchaseReceipt } from '../hooks/use-purchase-receipts'
-import { formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
 
 type ReceiptRow = {
   id: number
@@ -86,7 +86,7 @@ export function PurchaseReceiptsListPage() {
         accessorKey: 'receivedDate',
         header: 'Date',
         cell: ({ getValue }) => (
-          <span className="text-sm text-muted-foreground">{formatDateTime(getValue() as string)}</span>
+          <span className="text-sm text-muted-foreground">{formatDate(getValue() as string)}</span>
         ),
       },
       {
@@ -121,8 +121,8 @@ export function PurchaseReceiptsListPage() {
       title="Purchase Receipts"
       description="Record goods received from suppliers"
       action={
-        <Button onClick={() => navigate({ to: '/purchase/receipts/create', search: { purchaseOrderId: undefined } })} className="rounded-lg shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> Create Receipt
+        <Button onClick={() => navigate({ to: '/purchase/receipts/create', search: { purchaseOrderId: undefined } })} className="rounded-lg shadow-xs">
+          <Plus className="mr-2 size-4" /> Create Receipt
         </Button>
       }
     >

@@ -250,10 +250,10 @@ export function ExpensesPage() {
             <Badge
               variant={paid ? 'default' : 'outline'}
               className={cn(
-                'rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium',
+                'rounded-full border-0 px-2.5 py-0.5 text-xs font-medium',
                 paid
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                  : 'bg-amber-100 text-amber-700 hover:bg-amber-100',
+                  ? 'bg-success/12 text-success hover:bg-success/12'
+                  : 'bg-warning/12 text-warning hover:bg-warning/12',
               )}
             >
               {paid ? 'Paid' : 'Unpaid'}
@@ -277,7 +277,7 @@ export function ExpensesPage() {
           return (
             <Badge
               variant={active ? 'default' : 'secondary'}
-              className="rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium"
+              className="rounded-full border-0 px-2.5 py-0.5 text-xs font-medium"
             >
               {active ? 'Active' : 'Inactive'}
             </Badge>
@@ -419,8 +419,8 @@ export function ExpensesPage() {
       title="Expenses"
       description="Manage business expenses"
       action={
-        <Button onClick={() => setIsOpen(true)} className="rounded-lg shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> Create Expense
+        <Button onClick={() => setIsOpen(true)} className="rounded-lg shadow-xs">
+          <Plus className="mr-2 size-4" /> Create Expense
         </Button>
       }
     >
@@ -438,7 +438,7 @@ export function ExpensesPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Select value={period} onValueChange={(value) => setPeriod(value as DatePeriod)}>
               <SelectTrigger className="h-9 w-[150px] gap-2 rounded-lg text-xs font-medium">
-                <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
+                <CalendarRange className="size-3.5 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -475,7 +475,7 @@ export function ExpensesPage() {
                 className="h-9 text-xs text-muted-foreground"
               >
                 Clear
-                <X className="ml-1 h-3.5 w-3.5" />
+                <X className="ml-1 size-3.5" />
               </Button>
             )}
           </div>
@@ -528,14 +528,14 @@ export function ExpensesPage() {
                     ))}
                     <SelectItem value="__add__">
                       <span className="flex items-center gap-1">
-                        <Plus className="h-3.5 w-3.5" /> Add new category
+                        <Plus className="size-3.5" /> Add new category
                       </span>
                     </SelectItem>
                   </SelectContent>
                 </Select>
                 {isAddingCategory && (
                   <div className="mt-2 space-y-2 rounded-lg border bg-muted/20 p-3">
-                    <Label className="text-[11px]">New Expense Category</Label>
+                    <Label className="text-xs">New Expense Category</Label>
                     <Input
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
@@ -560,7 +560,7 @@ export function ExpensesPage() {
                         onClick={saveNewCategory}
                         disabled={createCategory.isPending}
                       >
-                        {createCategory.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Category'}
+                        {createCategory.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Add Category'}
                       </Button>
                     </div>
                   </div>
@@ -691,7 +691,7 @@ export function ExpensesPage() {
               className="flex-1 font-semibold"
             >
               {createExpense.isPending || updateExpense.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</>
               ) : (
                 'Save Expense'
               )}

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { authClient } from '@/lib/api'
+import { defaultRouteFor } from '@/lib/auth'
+import { useAuth } from '@/providers/auth'
 
 export const Route = createFileRoute('/login')({
   component: LoginPage,
@@ -13,6 +15,7 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   const navigate = useNavigate()
   const router = useRouter()
+  const { refresh } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -31,8 +34,9 @@ function LoginPage() {
         return
       }
 
+      const user = await refresh()
       await router.invalidate()
-      await navigate({ to: '/' })
+      await navigate({ to: defaultRouteFor(user) })
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : 'Unable to reach the server. Please try again.',
@@ -43,36 +47,36 @@ function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-muted/40 px-4 py-10">
-      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 -right-32 h-[28rem] w-[28rem] rounded-full bg-amber-400/10 blur-3xl" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-muted/30 px-4 py-10">
+      <div className="pointer-events-none absolute -left-32 -top-32 size-96 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -right-32 size-[28rem] rounded-full bg-warning/10 blur-3xl" />
 
-      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-3xl border bg-card shadow-xl lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="hidden flex-col justify-between bg-slate-950 p-10 text-white lg:flex">
+      <div className="relative grid w-full max-w-5xl overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs lg:grid-cols-[1.05fr_0.95fr]">
+        <section className="hidden flex-col justify-between bg-foreground p-10 text-background lg:flex">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-amber-300">
-              <Gem className="h-6 w-6" />
+            <div className="flex size-11 items-center justify-center rounded-lg bg-background/10 text-warning">
+              <Gem className="size-5" />
             </div>
-            <div>
+            <div className="flex flex-col gap-1">
               <p className="font-semibold tracking-wide">JAYAM GRANITES</p>
-              <p className="text-xs text-white/55">Business management</p>
+              <p className="text-xs text-background/60">Business management</p>
             </div>
           </div>
 
           <div className="max-w-md py-12">
-            <p className="mb-4 text-sm font-medium uppercase tracking-[0.2em] text-amber-300">
+            <p className="mb-4 text-xs font-medium uppercase tracking-widest text-warning">
               Welcome back
             </p>
-            <h1 className="text-4xl font-semibold leading-tight">
+            <h1 className="text-2xl font-semibold tracking-tight leading-tight tracking-tight">
               Your business, all in one place.
             </h1>
-            <p className="mt-5 text-base leading-7 text-white/65">
+            <p className="mt-5 text-sm leading-relaxed text-background/70">
               Sign in to manage products, inventory, sales, and day-to-day operations.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-white/55">
-            <ShieldCheck className="h-4 w-4 text-amber-300" />
+          <div className="flex items-center gap-2 text-sm text-background/60">
+            <ShieldCheck className="size-4 text-warning" />
             Secure access for your team
           </div>
         </section>
@@ -80,17 +84,17 @@ function LoginPage() {
         <section className="flex items-center justify-center p-6 sm:p-10 lg:p-12">
           <Card className="w-full max-w-md border-0 shadow-none">
             <CardHeader className="px-0 pt-0">
-              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary lg:hidden">
-                <Gem className="h-6 w-6" />
+              <div className="mb-5 flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary lg:hidden">
+                <Gem className="size-5" />
               </div>
-              <CardTitle className="text-2xl">Sign in to your account</CardTitle>
+              <CardTitle className="text-2xl font-semibold tracking-tight">Sign in to your account</CardTitle>
               <CardDescription>
                 Enter your work email and password to continue.
               </CardDescription>
             </CardHeader>
             <CardContent className="px-0 pb-0">
-              <form className="space-y-5" onSubmit={(event) => void handleSubmit(event)}>
-                <div className="space-y-2">
+              <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
+                <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium" htmlFor="email">
                     Email address
                   </label>
@@ -107,7 +111,7 @@ function LoginPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium" htmlFor="password">
                     Password
                   </label>
@@ -126,12 +130,12 @@ function LoginPage() {
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
+                      className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground transition-colors duration-150 ease-out hover:text-foreground"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                       onClick={() => setShowPassword((visible) => !visible)}
                       disabled={isSubmitting}
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
                 </div>
@@ -144,7 +148,7 @@ function LoginPage() {
 
                 <Button className="w-full" type="submit" disabled={isSubmitting}>
                   {isSubmitting ? 'Signing in…' : 'Sign in'}
-                  {!isSubmitting && <ArrowRight className="h-4 w-4" />}
+                  {!isSubmitting && <ArrowRight className="size-4" />}
                 </Button>
               </form>
 

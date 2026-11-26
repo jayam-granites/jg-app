@@ -37,7 +37,7 @@ function CreateAccountPage() {
   return (
     <div className="max-w-2xl space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">Create Account</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Create Account</h1>
         <p className="text-sm text-muted-foreground">Add a new payment account</p>
       </div>
       <Card>

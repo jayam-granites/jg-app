@@ -50,7 +50,7 @@ export function DataTableToolbar<TData>({
       {/* Search */}
       {searchKey && (
         <div className="relative flex-1 max-w-xs min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
           <input
             placeholder={searchKey.placeholder ?? 'Search...'}
             className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-8 text-sm transition-colors placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -68,7 +68,7 @@ export function DataTableToolbar<TData>({
               }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
             </button>
           )}
         </div>
@@ -77,7 +77,7 @@ export function DataTableToolbar<TData>({
       {/* Filters */}
       {hasFilters && (
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="h-4 w-4 text-muted-foreground/60 hidden sm:block" />
+          <SlidersHorizontal className="size-4 text-muted-foreground/60 hidden sm:block" />
           {filterableColumns?.map((column) => {
             const tableColumn = table.getColumn(column.id)
             if (!tableColumn) return null
@@ -102,7 +102,7 @@ export function DataTableToolbar<TData>({
           }}
         >
           Reset
-          <X className="h-3 w-3" />
+          <X className="size-3" />
         </button>
       )}
 
@@ -117,7 +117,7 @@ export function DataTableToolbar<TData>({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-md text-xs font-medium">
-              <Columns3 className="h-3.5 w-3.5" />
+              <Columns3 className="size-3.5" />
               <span className="hidden sm:inline">Columns</span>
             </Button>
           </DropdownMenuTrigger>

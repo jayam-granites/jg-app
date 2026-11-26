@@ -1,5 +1,6 @@
 import type { ErrorHandler } from 'hono'
 import { Prisma } from '@prisma/client'
+import { HTTPException } from 'hono/http-exception'
 import { AppError } from '#/lib/errors'
 import { logger } from '#/lib/logger'
 
@@ -10,8 +11,24 @@ export const errorMiddleware: ErrorHandler = (err, c) => {
     log.warn({ code: err.code, status: err.statusCode, message: err.message })
     return c.json(
       { error: { code: err.code, message: err.message } },
-      err.statusCode as 400 | 403 | 404 | 409 | 500,
+      err.statusCode as 400 | 403 | 404 | 409 | 413 | 500,
     )
+  }
+
+  if (err instanceof HTTPException) {
+    const status = err.status as 400 | 403 | 404 | 409 | 413 | 500
+    const code =
+      status === 413
+        ? 'PAYLOAD_TOO_LARGE'
+        : status === 404
+          ? 'NOT_FOUND'
+          : status === 403
+            ? 'FORBIDDEN'
+            : status === 400
+              ? 'VALIDATION_ERROR'
+              : 'HTTP_ERROR'
+    log.warn({ status, message: err.message })
+    return c.json({ error: { code, message: err.message } }, status)
   }
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {

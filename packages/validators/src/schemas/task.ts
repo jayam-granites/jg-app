@@ -43,6 +43,10 @@ export const CreateTaskSchema = object({
   status: optional(TaskStatusEnum),
   enquiryId: optional(relatedId),
   resourceId: optional(relatedId),
+  customerId: optional(relatedId),
+  supplierId: optional(relatedId),
+  brokerId: optional(relatedId),
+  transportId: optional(relatedId),
   isActive: optional(boolean()),
 })
 
@@ -54,6 +58,10 @@ export const UpdateTaskSchema = object({
   status: optional(TaskStatusEnum),
   enquiryId: optional(nullable(relatedId)),
   resourceId: optional(nullable(relatedId)),
+  customerId: optional(nullable(relatedId)),
+  supplierId: optional(nullable(relatedId)),
+  brokerId: optional(nullable(relatedId)),
+  transportId: optional(nullable(relatedId)),
   isActive: optional(boolean()),
 })
 
@@ -65,13 +73,26 @@ export type CreateTaskFormData = {
   status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
   enquiryId?: number
   resourceId?: number
+  customerId?: number
+  supplierId?: number
+  brokerId?: number
+  transportId?: number
   isActive?: boolean
 }
 
 export type UpdateTaskFormData = Omit<
   Partial<CreateTaskFormData>,
-  'enquiryId' | 'resourceId'
+  | 'enquiryId'
+  | 'resourceId'
+  | 'customerId'
+  | 'supplierId'
+  | 'brokerId'
+  | 'transportId'
 > & {
   enquiryId?: number | null
   resourceId?: number | null
+  customerId?: number | null
+  supplierId?: number | null
+  brokerId?: number | null
+  transportId?: number | null
 }

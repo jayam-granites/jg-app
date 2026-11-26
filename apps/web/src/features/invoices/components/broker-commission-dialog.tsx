@@ -165,7 +165,7 @@ export function BrokerCommissionDialog({
                   </SelectItem>
                 ))}
                 <SelectItem value="__add__">
-                  <span className="flex items-center gap-1"><Plus className="h-3.5 w-3.5" /> Add new broker</span>
+                  <span className="flex items-center gap-1"><Plus className="size-3.5" /> Add new broker</span>
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -176,16 +176,16 @@ export function BrokerCommissionDialog({
               <div className="text-xs font-medium">New Broker</div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-[11px]">Name</Label>
+                  <Label className="text-xs">Name</Label>
                   <Input value={newBrokerName} onChange={(e) => setNewBrokerName(e.target.value)} placeholder="Broker name" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px]">Mobile</Label>
+                  <Label className="text-xs">Mobile</Label>
                   <Input value={newBrokerMobile} onChange={(e) => setNewBrokerMobile(e.target.value)} placeholder="Mobile" />
                 </div>
               </div>
               <div className="space-y-1">
-                <Label className="text-[11px]">Commission %</Label>
+                <Label className="text-xs">Commission %</Label>
                 <Input
                   type="number"
                   min="0"
@@ -200,7 +200,7 @@ export function BrokerCommissionDialog({
                   Cancel
                 </Button>
                 <Button type="button" size="sm" onClick={saveNewBroker} disabled={createBroker.isPending}>
-                  {createBroker.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Broker'}
+                  {createBroker.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Add Broker'}
                 </Button>
               </div>
             </div>
@@ -234,7 +234,7 @@ export function BrokerCommissionDialog({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={saveCommission} disabled={createCommission.isPending}>
-            {createCommission.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Commission'}
+            {createCommission.isPending ? <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</> : 'Save Commission'}
           </Button>
         </DialogFooter>
       </DialogContent>

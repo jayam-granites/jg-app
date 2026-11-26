@@ -192,10 +192,10 @@ export function CreateInventoryPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/inventory' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">New Inventory</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">New Inventory</h1>
           <p className="text-sm text-muted-foreground">Create inventory batch with slabs</p>
         </div>
       </div>
@@ -252,7 +252,7 @@ export function CreateInventoryPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Slabs</h3>
             <Button type="button" size="sm" variant="outline" onClick={addSlab}>
-              <Plus className="mr-1 h-4 w-4" /> Add Slab
+              <Plus className="mr-1 size-4" /> Add Slab
             </Button>
           </div>
           {slabs.length === 0 ? (
@@ -295,10 +295,10 @@ export function CreateInventoryPage() {
                       <td className="px-3 py-1">
                         <div className="flex items-center justify-end gap-1">
                           <Button type="button" variant="ghost" size="icon" title="Duplicate slab" onClick={() => duplicateSlab(slab.id)}>
-                            <Copy className="h-4 w-4 text-muted-foreground" />
+                            <Copy className="size-4 text-muted-foreground" />
                           </Button>
                           <Button type="button" variant="ghost" size="icon" title="Remove slab" onClick={() => removeSlab(slab.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="size-4 text-destructive" />
                           </Button>
                         </div>
                       </td>

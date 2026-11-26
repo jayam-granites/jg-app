@@ -312,7 +312,7 @@ export function ProductForm({
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  'flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold',
+                  'flex size-7 items-center justify-center rounded-full text-xs font-semibold',
                   step === s.num
                     ? 'bg-primary text-primary-foreground'
                     : step > s.num
@@ -364,13 +364,13 @@ export function ProductForm({
                     </SelectItem>
                   ))}
                   <SelectItem value="__add__">
-                    <span className="flex items-center gap-1"><Plus className="h-3.5 w-3.5" /> Add new category</span>
+                    <span className="flex items-center gap-1"><Plus className="size-3.5" /> Add new category</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
               {isAddingCategory && (
                 <div className="mt-2 space-y-2 rounded-lg border bg-muted/20 p-3">
-                  <Label className="text-[11px]">New Product Category</Label>
+                  <Label className="text-xs">New Product Category</Label>
                   <Input
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
@@ -395,7 +395,7 @@ export function ProductForm({
                       onClick={saveNewCategory}
                       disabled={createCategory.isPending}
                     >
-                      {createCategory.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Category'}
+                      {createCategory.isPending ? <Loader2 className="size-4 animate-spin" /> : 'Add Category'}
                     </Button>
                   </div>
                 </div>
@@ -520,7 +520,7 @@ export function ProductForm({
                       disabled={!generationReady}
                       className="gap-2"
                     >
-                      <Sparkles className="h-4 w-4" />
+                      <Sparkles className="size-4" />
                       Generate{totalCombinations > 0 ? ` ${totalCombinations}` : ''} Variants
                     </Button>
                     {totalCombinations > 0 && (
@@ -554,7 +554,7 @@ export function ProductForm({
                     setManualOpen(true)
                   }}
                 >
-                  <Plus className="mr-1 h-3.5 w-3.5" /> Add Manually
+                  <Plus className="mr-1 size-3.5" /> Add Manually
                 </Button>
               </CardHeader>
               <CardContent className="p-0">
@@ -607,11 +607,11 @@ export function ProductForm({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="size-7"
                                 onClick={() => startEdit(i)}
                               >
                                 <svg
-                                  className="h-3.5 w-3.5"
+                                  className="size-3.5"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="currentColor"
@@ -628,10 +628,10 @@ export function ProductForm({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-destructive"
+                                className="size-7 text-destructive"
                                 onClick={() => removeVariant(i)}
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="size-3.5" />
                               </Button>
                             </div>
                           </TableCell>
@@ -655,10 +655,10 @@ export function ProductForm({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="size-7"
                   onClick={resetManualForm}
                 >
-                  <X className="h-4 w-4" />
+                  <X className="size-4" />
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -752,7 +752,7 @@ export function ProductForm({
                     onClick={handleAddManual}
                     disabled={!manualSku || manualUnitId === 0}
                   >
-                    <Plus className="mr-1 h-4 w-4" />
+                    <Plus className="mr-1 size-4" />
                     {editIdx !== null ? 'Update Variant' : 'Add Variant'}
                   </Button>
                   <Button type="button" variant="ghost" onClick={resetManualForm}>
@@ -776,7 +776,7 @@ export function ProductForm({
         <div>
           {step === 2 ? (
             <Button type="button" variant="outline" onClick={() => setStep(1)}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              <ArrowLeft className="mr-2 size-4" /> Back
             </Button>
           ) : (
             <div />
@@ -785,11 +785,11 @@ export function ProductForm({
         <div className="flex gap-3">
           {step === 1 ? (
             <Button type="submit" disabled={!canGoNext()}>
-              Next <ArrowRight className="ml-2 h-4 w-4" />
+              Next <ArrowRight className="ml-2 size-4" />
             </Button>
           ) : (
             <Button type="submit" disabled={variants.length === 0 || isSaving}>
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-2 size-4" />
               {isSaving
                 ? 'Saving...'
                 : mode === 'create'
@@ -836,7 +836,7 @@ function AttributeValueMatrix({
               <Checkbox
                 checked={isSelected}
                 onCheckedChange={() => onToggle(av.id)}
-                className="h-3.5 w-3.5"
+                className="size-3.5"
               />
               {av.value}
             </label>

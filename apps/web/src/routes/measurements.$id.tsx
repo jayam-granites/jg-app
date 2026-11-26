@@ -1,9 +1,11 @@
 import { createFileRoute, useParams, useNavigate } from '@tanstack/react-router'
 import { useState, useCallback, useMemo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { Plus, Trash2, Save, X, ArrowLeft, Printer, Check, Copy, MoreHorizontal, FileSpreadsheet, FileDown, Share2, Eye, ShoppingCart } from 'lucide-react'
+import { isGraniteCategoryName } from '@jg-app/shared'
 import { generatePdf, previewPdf } from '@/lib/pdf'
 import { formatTotalArea, roundTotalArea, formatAreaValue } from '@/lib/area'
 import { PageLayout } from '@/shared/components/page-layout'
+import { PageLoading } from '@/shared/components/page-loading'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -156,15 +158,15 @@ const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
   const hasData = localSlabs.length > 0
 
   return (
-    <div className="rounded-xl border bg-card shadow-sm print:border print:shadow-none">
-      <div className="flex items-center justify-between border-b bg-muted/10 px-4 py-3 print:bg-gray-100">
+    <div className="rounded-xl border bg-card shadow-xs print:border print:shadow-none">
+      <div className="flex items-center justify-between border-b bg-muted/10 px-4 py-3 print:bg-muted">
         <span className="text-sm font-semibold">{product.name}</span>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={addRow} className="rounded-lg h-8 print:hidden">
-            <Plus className="mr-1 h-3.5 w-3.5" /> Add Slab
+            <Plus className="mr-1 size-3.5" /> Add Slab
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground/60 hover:text-destructive print:hidden" onClick={onRemove}>
-            <X className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground/60 hover:text-destructive print:hidden" onClick={onRemove}>
+            <X className="size-4" />
           </Button>
         </div>
       </div>
@@ -232,19 +234,19 @@ const ProductSlabTable = forwardRef<ProductSlabTableHandle, {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground/60 hover:text-primary"
+                      className="size-8 text-muted-foreground/60 hover:text-primary"
                       onClick={() => duplicateRow(index)}
                       title="Duplicate slab"
                     >
-                      <Copy className="h-3.5 w-3.5" />
+                      <Copy className="size-3.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground/60 hover:text-destructive"
+                      className="size-8 text-muted-foreground/60 hover:text-destructive"
                       onClick={() => removeRow(index)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="size-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -351,12 +353,16 @@ function MeasurementDetailPage() {
   )
 
   const availableProducts = useMemo(
-    () => products.filter((p: any) => !addedProductIds.includes(p.id)),
+    () => products.filter((p: any) =>
+      !addedProductIds.includes(p.id) && isGraniteCategoryName(p.category?.name),
+    ),
     [products, addedProductIds],
   )
 
   function addSelectedProducts() {
-    setAddedProductIds((prev) => [...new Set([...prev, ...Array.from(selectedInDialog)])])
+    const allowedIds = new Set(availableProducts.map((p: any) => p.id))
+    const selectedIds = Array.from(selectedInDialog).filter((id) => allowedIds.has(id))
+    setAddedProductIds((prev) => [...new Set([...prev, ...selectedIds])])
     setSelectedInDialog(new Set())
     setDialogOpen(false)
   }
@@ -562,15 +568,7 @@ function MeasurementDetailPage() {
     }
   }, [measurement, measurementName, measurementPhone, measurementAddress, slabsFromApi])
 
-  if (isLoading) {
-    return (
-      <PageLayout title="Loading..." description="Loading measurement details...">
-        <div className="flex items-center justify-center py-16">
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </PageLayout>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!measurement) {
     return (
@@ -589,15 +587,15 @@ function MeasurementDetailPage() {
       action={
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate({ to: '/measurements' })} className="rounded-lg">
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
+            <ArrowLeft className="mr-1.5 size-4" /> Back
           </Button>
           <Button variant="outline" size="sm" onClick={printPage} className="rounded-lg">
-            <Printer className="mr-1.5 h-4 w-4" /> Print
+            <Printer className="mr-1.5 size-4" /> Print
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="rounded-lg h-8 w-8" disabled={!isSaved} title={isSaved ? 'Export options' : 'Save the measurement to enable export'}>
-                <MoreHorizontal className="h-4 w-4" />
+              <Button variant="outline" size="icon" className="rounded-lg size-8" disabled={!isSaved} title={isSaved ? 'Export options' : 'Save the measurement to enable export'}>
+                <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
@@ -605,23 +603,23 @@ function MeasurementDetailPage() {
                 onClick={() => convert(measurement)}
                 disabled={slabsFromApi.length === 0}
               >
-                <ShoppingCart className="mr-2 h-4 w-4" />
+                <ShoppingCart className="mr-2 size-4" />
                 Convert to Sales
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handlePreviewPdf}>
-                <Eye className="mr-2 h-4 w-4" />
+                <Eye className="mr-2 size-4" />
                 Preview PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportExcel}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                <FileSpreadsheet className="mr-2 size-4" />
                 Export Excel
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSavePdf}>
-                <FileDown className="mr-2 h-4 w-4" />
+                <FileDown className="mr-2 size-4" />
                 Save PDF
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSharePdf}>
-                <Share2 className="mr-2 h-4 w-4" />
+                <Share2 className="mr-2 size-4" />
                 Share PDF
               </DropdownMenuItem>
               <DropdownMenuItem
@@ -629,7 +627,7 @@ function MeasurementDetailPage() {
                 disabled={deleteMeasurement.isPending}
                 className="text-destructive focus:text-destructive"
               >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 className="mr-2 size-4" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -637,7 +635,7 @@ function MeasurementDetailPage() {
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="rounded-lg">
-                  <Plus className="mr-1.5 h-4 w-4" /> Add Product
+                  <Plus className="mr-1.5 size-4" /> Add Product
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg p-0">
@@ -645,7 +643,11 @@ function MeasurementDetailPage() {
                   <CommandInput placeholder="Search products..." />
                   <CommandList>
                     {availableProducts.length === 0 ? (
-                      <CommandEmpty>All products have been added.</CommandEmpty>
+                      <CommandEmpty>
+                        {products.some((p: any) => isGraniteCategoryName(p.category?.name))
+                          ? 'All Granites products have been added.'
+                          : 'No products found in the Granites category.'}
+                      </CommandEmpty>
                     ) : (
                       <>
                         <CommandEmpty>No products found.</CommandEmpty>
@@ -662,8 +664,8 @@ function MeasurementDetailPage() {
                                 })
                               }}
                             >
-                              <div className={`mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary ${selectedInDialog.has(p.id) ? 'bg-primary text-primary-foreground' : 'opacity-50'}`}>
-                                {selectedInDialog.has(p.id) && <Check className="h-3 w-3" />}
+                              <div className={`mr-2 flex size-4 items-center justify-center rounded-sm border border-primary ${selectedInDialog.has(p.id) ? 'bg-primary text-primary-foreground' : 'opacity-50'}`}>
+                                {selectedInDialog.has(p.id) && <Check className="size-3" />}
                               </div>
                               {p.name}
                             </CommandItem>
@@ -771,7 +773,7 @@ function MeasurementDetailPage() {
 
         <div className="flex justify-center pt-4 print:hidden">
           <Button size="lg" onClick={saveAll} className="rounded-lg px-8" disabled={updateMeasurement.isPending || createSlab.isPending || deleteSlab.isPending}>
-            <Save className="mr-2 h-5 w-5" /> {updateMeasurement.isPending || createSlab.isPending || deleteSlab.isPending ? 'Saving...' : 'Save All'}
+            <Save className="mr-2 size-5" /> {updateMeasurement.isPending || createSlab.isPending || deleteSlab.isPending ? 'Saving...' : 'Save All'}
           </Button>
         </div>
       </div>

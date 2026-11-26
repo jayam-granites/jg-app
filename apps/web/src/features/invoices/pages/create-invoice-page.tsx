@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Loader2, Plus, Save, Trash2, Truck } from 'lucide-react'
+import { ArrowLeft, Check, ChevronsUpDown, Loader2, Plus, Save, Trash2, Truck, UserPlus } from 'lucide-react'
 import { api } from '@/lib/api'
 import { PageLayout } from '@/shared/components/page-layout'
 import { Button } from '@/components/ui/button'
@@ -12,12 +12,15 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Command, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command'
+import { cn } from '@/lib/utils'
 import { useCustomers, useCustomer, useCreateCustomer, useUpdateCustomer } from '@/features/customers/hooks/use-customers'
 import { useMeasurement } from '@/features/measurements/hooks/use-measurements'
 import { useProducts } from '@/features/products/hooks/use-products'
 import { useTransportProviders, useCreateTransport } from '@/features/transport/hooks/use-transport'
-import { useCreateInvoice } from '../hooks/use-invoices'
-import { roundInvoiceSqft } from '@jg-app/shared'
+import { useCreateInvoice, useInvoiceNumbering } from '../hooks/use-invoices'
+import { nextInvoiceNumber, roundInvoiceSqft, type InvoiceNumberScope } from '@jg-app/shared'
 
 type InvoiceLine = {
   key: string
@@ -95,10 +98,12 @@ export function CreateInvoicePage() {
   const transportProviders = transportRes?.data ?? []
   const measurement = measurementRes?.data
   const customer = customerRes?.data
+  const selectedCustomer = customers.find((c: any) => c.id === customerId) ?? customer
 
   const [lines, setLines] = useState<InvoiceLine[]>([])
   const [loadingRate, setLoadingRate] = useState('6')
-  const [isGst, setIsGst] = useState(false)
+  const [invoiceType, setInvoiceType] = useState<InvoiceNumberScope>('normal')
+  const [gstNumber, setGstNumber] = useState('')
   const [isHalfGst, setIsHalfGst] = useState(false)
   const [transportEnabled, setTransportEnabled] = useState(false)
   const [transportProviderId, setTransportProviderId] = useState('')
@@ -107,6 +112,13 @@ export function CreateInvoicePage() {
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [accountId, setAccountId] = useState('')
   const [remarks, setRemarks] = useState('')
+
+  const isGst = invoiceType === 'gst'
+  const numberingRes = useInvoiceNumbering()
+  const nextNumber = useMemo(() => {
+    const settings = numberingRes.data?.data
+    return settings ? nextInvoiceNumber(settings, invoiceType) : '—'
+  }, [numberingRes.data, invoiceType])
 
   const [addItemOpen, setAddItemOpen] = useState(false)
   const [manualProductId, setManualProductId] = useState('')
@@ -121,11 +133,19 @@ export function CreateInvoicePage() {
   const manualUnits = variantUnits(manualProduct)
 
   const [customerOpen, setCustomerOpen] = useState(false)
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false)
+  const [customerSearch, setCustomerSearch] = useState('')
   const [newCustomerName, setNewCustomerName] = useState('')
   const [newCustomerMobile, setNewCustomerMobile] = useState('')
   const [newCustomerAddress, setNewCustomerAddress] = useState('')
   const [editMobile, setEditMobile] = useState('')
   const [editAddress, setEditAddress] = useState('')
+
+  const filteredCustomers = useMemo(() => {
+    const query = customerSearch.trim().toLowerCase()
+    if (!query) return customers
+    return customers.filter((c: any) => `${c.name ?? ''} ${c.mobile ?? ''}`.toLowerCase().includes(query))
+  }, [customers, customerSearch])
 
   const [transportOpen, setTransportOpen] = useState(false)
   const [newTransportName, setNewTransportName] = useState('')
@@ -134,6 +154,13 @@ export function CreateInvoicePage() {
 
   const prefilledMeasurement = useRef<string | null>(null)
   const contactSeed = useRef('')
+  const gstSeedCustomer = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!customer || gstSeedCustomer.current === customer.id) return
+    gstSeedCustomer.current = customer.id
+    setGstNumber(customer.gstNumber ?? '')
+  }, [customer])
 
   useEffect(() => {
     const key = `${customerId ?? ''}-${measurement?.id ?? ''}`
@@ -284,6 +311,7 @@ export function CreateInvoicePage() {
     })
     if (res?.data?.id) setCustomerId(Number(res.data.id))
     setCustomerOpen(false)
+    setCustomerSearch('')
     setNewCustomerName('')
     setNewCustomerMobile('')
     setNewCustomerAddress('')
@@ -318,6 +346,10 @@ export function CreateInvoicePage() {
       alert('Please select a transport provider')
       return
     }
+    if (isGst && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstNumber.trim().toUpperCase())) {
+      alert('Enter a valid 15-character GSTIN for GST invoices')
+      return
+    }
 
     if (customer) {
       const data: { mobile?: string; address?: string } = {}
@@ -337,6 +369,8 @@ export function CreateInvoicePage() {
       {
         customerId,
         invoiceDate: new Date().toISOString(),
+        invoiceType,
+        gstNumber: isGst ? gstNumber.trim().toUpperCase() : undefined,
         isGst,
         isHalfGst,
         gstPercent: 18,
@@ -394,7 +428,7 @@ export function CreateInvoicePage() {
       }
       action={
         <Button variant="outline" size="sm" onClick={() => navigate({ to: '/invoices' })} className="rounded-lg">
-          <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
+          <ArrowLeft className="mr-1.5 size-4" /> Back
         </Button>
       }
     >
@@ -402,28 +436,99 @@ export function CreateInvoicePage() {
         <Card className="p-4 space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold">Customer</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={customerId ? String(customerId) : ''}
-                  onValueChange={(value) => setCustomerId(Number(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c: any) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {c.name}
-                        {c.mobile ? ` · ${c.mobile}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button type="button" variant="outline" size="icon" onClick={() => setCustomerOpen(true)} title="Add customer">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
+              <Label htmlFor="invoice-type" className="text-sm font-semibold">Invoice Type</Label>
+              <Select value={invoiceType} onValueChange={(value) => setInvoiceType(value as InvoiceNumberScope)}>
+                <SelectTrigger id="invoice-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Normal (Non-GST)</SelectItem>
+                  <SelectItem value="gst">GST</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invoice-number-preview" className="text-sm font-semibold">
+                Invoice number (preview)
+              </Label>
+              <Input
+                id="invoice-number-preview"
+                readOnly
+                value={nextNumber}
+                className="font-mono font-semibold"
+              />
+              <p className="text-xs text-muted-foreground">
+                Assigned when the invoice is saved. {isGst ? 'GST' : 'Normal'} sequence only.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="invoice-customer" className="text-sm font-semibold">Customer</Label>
+              <Popover open={customerPickerOpen} onOpenChange={setCustomerPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="invoice-customer"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={customerPickerOpen}
+                    className={cn('w-full justify-between font-normal', !customerId && 'text-muted-foreground')}
+                    onClick={() => setCustomerSearch('')}
+                  >
+                    <span className="truncate">
+                      {selectedCustomer
+                        ? `${selectedCustomer.name}${selectedCustomer.mobile ? ` · ${selectedCustomer.mobile}` : ''}`
+                        : 'Select customer'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search customer..."
+                      value={customerSearch}
+                      onValueChange={setCustomerSearch}
+                    />
+                    <CommandList>
+                      {filteredCustomers.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">No matching customer.</div>
+                      ) : (
+                        <CommandGroup heading="Customers">
+                          {filteredCustomers.map((c: any) => (
+                            <CommandItem
+                              key={c.id}
+                              value={String(c.id)}
+                              onSelect={() => {
+                                setCustomerId(Number(c.id))
+                                setCustomerPickerOpen(false)
+                                setCustomerSearch('')
+                              }}
+                            >
+                              <Check className={cn('mr-2 size-4', customerId === c.id ? 'opacity-100' : 'opacity-0')} />
+                              <span className="truncate">{c.name}{c.mobile ? ` · ${c.mobile}` : ''}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
+                      <CommandSeparator />
+                      <CommandGroup>
+                        <CommandItem
+                          value="create-new-customer"
+                          onSelect={() => {
+                            setNewCustomerName(customerSearch.trim())
+                            setCustomerSearch('')
+                            setCustomerPickerOpen(false)
+                            setCustomerOpen(true)
+                          }}
+                        >
+                          <UserPlus className="mr-2 size-4" />
+                          Create new customer
+                        </CommandItem>
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="invoice-phone" className="text-sm font-semibold">Phone</Label>
@@ -462,7 +567,7 @@ export function CreateInvoicePage() {
               <p className="text-xs text-muted-foreground">Price is editable per product. Loading applies only to checked products.</p>
             </div>
             <Button type="button" size="sm" variant="outline" onClick={() => setAddItemOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Add Product
+              <Plus className="mr-1.5 size-4" /> Add Product
             </Button>
           </div>
 
@@ -526,10 +631,10 @@ export function CreateInvoicePage() {
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground/60 hover:text-destructive"
+                        className="size-8 text-muted-foreground/60 hover:text-destructive"
                         onClick={() => removeLine(line.key)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="size-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -560,7 +665,7 @@ export function CreateInvoicePage() {
             <div className="space-y-3 border-t pt-3">
               <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
                 <Checkbox checked={transportEnabled} onCheckedChange={(checked) => setTransportEnabled(checked === true)} />
-                <Truck className="h-4 w-4" /> Add transport charge
+                <Truck className="size-4" /> Add transport charge
               </label>
               {transportEnabled && (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -607,15 +712,28 @@ export function CreateInvoicePage() {
           </Card>
 
           <Card className="p-4 space-y-4">
-            <div className="flex items-center justify-between">
+            <div>
               <h3 className="text-base font-semibold">GST</h3>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <Checkbox checked={isGst} onCheckedChange={(checked) => setIsGst(checked === true)} />
-                Enable GST
-              </label>
+              <p className="text-xs text-muted-foreground">
+                {isGst
+                  ? 'GSTIN and tax breakdown are required on GST invoices.'
+                  : 'Not applicable to Normal (Non-GST) invoices.'}
+              </p>
             </div>
             {isGst && (
               <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="invoice-gstin" className="text-sm font-semibold">GSTIN</Label>
+                  <Input
+                    id="invoice-gstin"
+                    required
+                    maxLength={15}
+                    className="uppercase font-mono"
+                    placeholder="15-character GSTIN"
+                    value={gstNumber}
+                    onChange={(event) => setGstNumber(event.target.value.toUpperCase())}
+                  />
+                </div>
                 <label className="flex cursor-pointer items-center gap-2 text-sm">
                   <Checkbox
                     checked={isHalfGst}
@@ -758,9 +876,9 @@ export function CreateInvoicePage() {
           </Button>
           <Button type="submit" disabled={createInvoice.isPending} className="font-semibold">
             {createInvoice.isPending ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+              <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</>
             ) : (
-              <><Save className="mr-2 h-4 w-4" /> Create Invoice</>
+              <><Save className="mr-2 size-4" /> Create Invoice</>
             )}
           </Button>
         </div>
@@ -823,29 +941,47 @@ export function CreateInvoicePage() {
 
       <Dialog open={customerOpen} onOpenChange={setCustomerOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Customer</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Name *</Label>
-              <Input value={newCustomerName} onChange={(e) => setNewCustomerName(e.target.value)} placeholder="Customer name" />
+          <div className="flex flex-col gap-5">
+            <DialogHeader>
+              <DialogTitle>Add Customer</DialogTitle>
+              <DialogDescription>Create a customer and use them on this invoice.</DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="new-customer-name" className="text-sm font-medium">Name *</Label>
+                <Input
+                  id="new-customer-name"
+                  value={newCustomerName}
+                  onChange={(e) => setNewCustomerName(e.target.value)}
+                  placeholder="Customer name"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="new-customer-phone" className="text-sm font-medium">Phone</Label>
+                <Input
+                  id="new-customer-phone"
+                  value={newCustomerMobile}
+                  onChange={(e) => setNewCustomerMobile(e.target.value)}
+                  placeholder="Phone"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="new-customer-address" className="text-sm font-medium">Address</Label>
+                <Input
+                  id="new-customer-address"
+                  value={newCustomerAddress}
+                  onChange={(e) => setNewCustomerAddress(e.target.value)}
+                  placeholder="Address"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Phone</Label>
-              <Input value={newCustomerMobile} onChange={(e) => setNewCustomerMobile(e.target.value)} placeholder="Phone" />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Address</Label>
-              <Input value={newCustomerAddress} onChange={(e) => setNewCustomerAddress(e.target.value)} placeholder="Address" />
-            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCustomerOpen(false)}>Cancel</Button>
+              <Button type="button" onClick={saveCustomer} disabled={!newCustomerName.trim() || createCustomer.isPending}>
+                {createCustomer.isPending ? 'Saving...' : 'Save Customer'}
+              </Button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setCustomerOpen(false)}>Cancel</Button>
-            <Button type="button" onClick={saveCustomer} disabled={!newCustomerName.trim() || createCustomer.isPending}>
-              {createCustomer.isPending ? 'Saving...' : 'Save Customer'}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

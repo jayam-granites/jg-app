@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, Package, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Package, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePurchaseReceipt, useDeletePurchaseReceipt } from '../hooks/use-purchase-receipts'
 import { useAppSettings } from '@/features/masters/hooks/use-lookups'
 import { SETTINGS_KEYS } from '@jg-app/shared'
-import { formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
+import { PageLoading } from '@/shared/components/page-loading'
 
 export function ViewPurchaseReceiptPage() {
   const { id } = useParams({ from: '/purchase/receipts/$id' })
@@ -26,19 +27,13 @@ export function ViewPurchaseReceiptPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!receipt) {
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/receipts' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <p className="text-muted-foreground">Purchase receipt not found.</p>
       </div>
@@ -50,21 +45,21 @@ export function ViewPurchaseReceiptPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/receipts' })}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{receipt.receiptNumber}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{receipt.receiptNumber}</h1>
             <p className="text-sm text-muted-foreground">
-              Received {formatDateTime(receipt.receivedDate)}
+              Received {formatDate(receipt.receivedDate)}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => navigate({ to: `/purchase/receipts/${id}/edit` })}>
-            <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
+            <Pencil className="mr-1.5 size-3.5" /> Edit
           </Button>
           <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleteReceipt.isPending}>
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+            <Trash2 className="mr-1.5 size-3.5" /> Delete
           </Button>
         </div>
       </div>
@@ -132,7 +127,7 @@ export function ViewPurchaseReceiptPage() {
                     <td className="px-4 py-2 text-right">
                       {item.inventoryBatch ? (
                         <Button variant="ghost" size="sm" className="h-8 gap-1" onClick={() => navigate({ to: `/inventory/${item.inventoryBatch.id}` })}>
-                          <Package className="h-3 w-3" /> View
+                          <Package className="size-3" /> View
                         </Button>
                       ) : <span className="text-muted-foreground">-</span>}
                     </td>
@@ -370,7 +365,7 @@ export function ViewPurchaseReceiptPage() {
                   <tr key={exp.id} className="border-b last:border-0">
                     <td className="px-4 py-2 font-mono text-xs">{exp.expenseNumber}</td>
                     <td className="px-4 py-2">{exp.category?.name ?? '-'}</td>
-                    <td className="px-4 py-2">{formatDateTime(exp.expenseDate)}</td>
+                    <td className="px-4 py-2">{formatDate(exp.expenseDate)}</td>
                     <td className="px-4 py-2 text-right font-medium">₹{Number(exp.amount).toLocaleString()}</td>
                     <td className="px-4 py-2">{exp.paymentMode ?? '-'}</td>
                     <td className="px-4 py-2 text-muted-foreground">{exp.referenceNumber ?? '-'}</td>

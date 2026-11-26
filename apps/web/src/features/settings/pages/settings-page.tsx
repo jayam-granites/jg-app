@@ -3,7 +3,9 @@ import {
   Building2,
   Contact,
   FileCheck2,
+  Hash,
   Landmark,
+  MessageCircle,
   Pencil,
   Save,
   Settings2,
@@ -11,39 +13,50 @@ import {
   Upload,
   X,
 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { PageLayout } from '@/shared/components/page-layout'
+import { EMPTY_WHATSAPP_SETTINGS, isWhatsAppConfigured, nextInvoiceNumber } from '@jg-app/shared'
 import {
   useCompanyProfile,
   useDeleteSystemConfiguration,
+  useInvoiceNumberingSettings,
   useSaveSystemConfiguration,
   useSystemConfigurations,
   useUpdateCompanyProfile,
+  useUpdateInvoiceNumbering,
+  useUpdateWhatsAppSettings,
+  useWhatsAppSettings,
   type CompanyProfileUpdate,
   type ConfigurationInput,
   type ConfigurationType,
+  type InvoiceNumberingSettings,
   type SystemConfiguration,
+  type WhatsAppSettings,
 } from '../hooks/use-settings'
 
-type SettingsSection = 'company' | 'contact' | 'tax' | 'bank' | 'system'
+type SettingsSection = 'company' | 'contact' | 'tax' | 'bank' | 'whatsapp' | 'invoiceNumbering' | 'system'
 type ProfileDraft = CompanyProfileUpdate
 type ConfigurationDraft = Omit<ConfigurationInput, 'options' | 'category' | 'description'> & {
   optionsText: string
   category: string
   description: string
 }
-
 const sections: { id: SettingsSection; label: string; icon: typeof Building2 }[] = [
   { id: 'company', label: 'Company Details', icon: Building2 },
   { id: 'contact', label: 'Contact Information', icon: Contact },
   { id: 'tax', label: 'Tax & Compliance', icon: FileCheck2 },
   { id: 'bank', label: 'UPI & Bank Details', icon: Landmark },
+  { id: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
+  { id: 'invoiceNumbering', label: 'Invoice Numbering', icon: Hash },
   { id: 'system', label: 'System Configurations', icon: Settings2 },
 ]
 
@@ -184,13 +197,31 @@ export function SettingsPage() {
   const [editingConfiguration, setEditingConfiguration] = useState<SystemConfiguration | null>(null)
   const [configurationError, setConfigurationError] = useState('')
   const [configurationMessage, setConfigurationMessage] = useState('')
+  const [numberingDraft, setNumberingDraft] = useState<InvoiceNumberingSettings | null>(null)
+  const [numberingError, setNumberingError] = useState('')
+  const [numberingMessage, setNumberingMessage] = useState('')
+  const [whatsappDraft, setWhatsappDraft] = useState<WhatsAppSettings>(EMPTY_WHATSAPP_SETTINGS)
+  const [whatsappError, setWhatsappError] = useState('')
+  const [whatsappMessage, setWhatsappMessage] = useState('')
+  const [showWhatsappApiKey, setShowWhatsappApiKey] = useState(false)
   const profileQuery = useCompanyProfile()
   const configurationQuery = useSystemConfigurations()
+  const numberingQuery = useInvoiceNumberingSettings()
+  const whatsappQuery = useWhatsAppSettings()
   const updateProfile = useUpdateCompanyProfile()
   const saveConfiguration = useSaveSystemConfiguration()
   const deleteConfiguration = useDeleteSystemConfiguration()
+  const updateNumbering = useUpdateInvoiceNumbering()
+  const updateWhatsapp = useUpdateWhatsAppSettings()
   const profile = profileQuery.data?.data
   const configurations = configurationQuery.data?.data ?? []
+  const savedWhatsapp = whatsappQuery.data?.data
+  const whatsappConfigured = savedWhatsapp ? isWhatsAppConfigured(savedWhatsapp) : false
+  const setWhatsappField = (field: keyof WhatsAppSettings, value: string) => {
+    setWhatsappDraft((current) => ({ ...current, [field]: value }))
+    setWhatsappError('')
+    setWhatsappMessage('')
+  }
 
   useEffect(() => {
     if (!profile) return
@@ -215,6 +246,18 @@ export function SettingsPage() {
     })
   }, [profile])
 
+  useEffect(() => {
+    const settings = numberingQuery.data?.data
+    if (!settings) return
+    setNumberingDraft(settings)
+  }, [numberingQuery.data])
+
+  useEffect(() => {
+    const settings = whatsappQuery.data?.data
+    if (!settings) return
+    setWhatsappDraft(settings)
+  }, [whatsappQuery.data])
+
   const setProfileField = (field: keyof CompanyProfileUpdate, value: string) => {
     setProfileDraft((current) => ({ ...current, [field]: value }))
     setProfileError('')
@@ -228,6 +271,33 @@ export function SettingsPage() {
     updateProfile.mutate(profileDraft, {
       onSuccess: () => setProfileMessage('Company settings saved.'),
       onError: (error) => setProfileError(error.message),
+    })
+  }
+
+  const setNumberingField = (field: keyof InvoiceNumberingSettings, value: string | number) => {
+    setNumberingDraft((current) => (current ? { ...current, [field]: value } : current))
+    setNumberingError('')
+    setNumberingMessage('')
+  }
+
+  const handleNumberingSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!numberingDraft) return
+    setNumberingError('')
+    setNumberingMessage('')
+    updateNumbering.mutate(numberingDraft, {
+      onSuccess: () => setNumberingMessage('Invoice numbering settings saved.'),
+      onError: (error) => setNumberingError(error.message),
+    })
+  }
+
+  const handleWhatsappSave = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setWhatsappError('')
+    setWhatsappMessage('')
+    updateWhatsapp.mutate(whatsappDraft, {
+      onSuccess: () => setWhatsappMessage('WhatsApp settings saved.'),
+      onError: (error) => setWhatsappError(error.message),
     })
   }
 
@@ -302,8 +372,17 @@ export function SettingsPage() {
   )
 
   const renderContent = () => {
-    if (section !== 'system' && profileQuery.isLoading) return <p className="text-sm text-muted-foreground">Loading company profile…</p>
-    if (section !== 'system' && profileQuery.error) {
+    const usesProfile = section !== 'system' && section !== 'invoiceNumbering' && section !== 'whatsapp'
+    if (usesProfile && profileQuery.isLoading) {
+      return (
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      )
+    }
+    if (usesProfile && profileQuery.error) {
       return <p role="alert" className="text-sm text-destructive">{profileQuery.error.message}</p>
     }
 
@@ -394,6 +473,192 @@ export function SettingsPage() {
               </Field>
             </div>
           </div>,
+        )
+      case 'whatsapp':
+        if (whatsappQuery.isLoading) {
+          return (
+            <div className="flex flex-col gap-4">
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          )
+        }
+        if (whatsappQuery.error) {
+          return <p role="alert" className="text-sm text-destructive">{whatsappQuery.error.message}</p>
+        }
+        return (
+          <form className="flex flex-col gap-6" onSubmit={handleWhatsappSave}>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+              <div>
+                <h3 className="font-semibold">WhatsApp feature status</h3>
+                <p className="text-sm text-muted-foreground">
+                  {whatsappConfigured
+                    ? 'All required API details are saved. Connectivity verification will be added with the WhatsApp integration.'
+                    : 'Add the API URL, API key, and session ID, then save to enable WhatsApp features.'}
+                </p>
+              </div>
+              <Badge role="status" variant={whatsappConfigured ? 'success' : 'secondary'}>
+                {whatsappConfigured ? 'Enabled' : 'Disabled'}
+              </Badge>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <Field label="API URL" htmlFor="whatsapp-api-url" description="Base URL of the WhatsApp API server, e.g. https://wa.example.com.">
+                  <Input
+                    id="whatsapp-api-url"
+                    type="url"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder="https://wa.example.com"
+                    value={whatsappDraft.apiUrl}
+                    onChange={(event) => setWhatsappField('apiUrl', event.target.value)}
+                  />
+                </Field>
+              </div>
+              <Field label="API key" htmlFor="whatsapp-api-key">
+                <div className="flex gap-2">
+                  <Input
+                    id="whatsapp-api-key"
+                    type={showWhatsappApiKey ? 'text' : 'password'}
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    placeholder="Enter API key"
+                    value={whatsappDraft.apiKey}
+                    onChange={(event) => setWhatsappField('apiKey', event.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    aria-controls="whatsapp-api-key"
+                    onClick={() => setShowWhatsappApiKey((current) => !current)}
+                  >
+                    {showWhatsappApiKey ? 'Hide' : 'Show'}
+                  </Button>
+                </div>
+              </Field>
+              <Field label="Session ID" htmlFor="whatsapp-session-id">
+                <Input
+                  id="whatsapp-session-id"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="Enter session ID"
+                  value={whatsappDraft.sessionId}
+                  onChange={(event) => setWhatsappField('sessionId', event.target.value)}
+                />
+              </Field>
+            </div>
+            {whatsappError && <p role="alert" className="text-sm text-destructive">{whatsappError}</p>}
+            {whatsappMessage && <p role="status" className="text-sm text-muted-foreground">{whatsappMessage}</p>}
+            <p className="rounded-lg bg-muted/30 p-3 text-sm text-muted-foreground">
+              Configuration is saved in the app database. Connectivity verification and message sending will be added with the WhatsApp integration.
+            </p>
+            <div>
+              <Button type="submit" disabled={updateWhatsapp.isPending}>
+                <Save data-icon="inline-start" />
+                {updateWhatsapp.isPending ? 'Saving…' : 'Save WhatsApp settings'}
+              </Button>
+            </div>
+          </form>
+        )
+      case 'invoiceNumbering':
+        if (numberingQuery.isLoading) {
+          return (
+            <div className="flex flex-col gap-4">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
+          )
+        }
+        if (numberingQuery.error) {
+          return <p role="alert" className="text-sm text-destructive">{numberingQuery.error.message}</p>
+        }
+        if (!numberingDraft) return null
+        return (
+          <form className="flex flex-col gap-6" onSubmit={handleNumberingSave}>
+            <div>
+              <h3 className="font-semibold">Invoice Numbering Settings</h3>
+              <p className="text-sm text-muted-foreground">
+                Normal and GST bills use independent counters. The current number is the last number
+                used; the next bill gets the following number.
+              </p>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2">
+              <Field label="Normal Invoice Prefix" htmlFor="normal-invoice-prefix">
+                <Input
+                  id="normal-invoice-prefix"
+                  required
+                  value={numberingDraft.normalPrefix}
+                  onChange={(event) => setNumberingField('normalPrefix', event.target.value)}
+                />
+              </Field>
+              <Field label="Current Normal Invoice Number" htmlFor="normal-current-number" description="e.g. 120 makes the next Normal bill inv/121.">
+                <Input
+                  id="normal-current-number"
+                  type="number"
+                  min={0}
+                  step={1}
+                  required
+                  value={numberingDraft.normalCurrentNumber}
+                  onChange={(event) => setNumberingField('normalCurrentNumber', Number(event.target.value))}
+                />
+              </Field>
+              <Field label="GST Invoice Prefix" htmlFor="gst-invoice-prefix">
+                <Input
+                  id="gst-invoice-prefix"
+                  required
+                  value={numberingDraft.gstPrefix}
+                  onChange={(event) => setNumberingField('gstPrefix', event.target.value)}
+                />
+              </Field>
+              <Field label="Current GST Invoice Number" htmlFor="gst-current-number" description="e.g. 74 makes the next GST bill inv/2627/075.">
+                <Input
+                  id="gst-current-number"
+                  type="number"
+                  min={0}
+                  step={1}
+                  required
+                  value={numberingDraft.gstCurrentNumber}
+                  onChange={(event) => setNumberingField('gstCurrentNumber', Number(event.target.value))}
+                />
+              </Field>
+              <Field label="Number Padding Digits" htmlFor="padding-digits" description="e.g. 3 renders 001, 075, 121.">
+                <Input
+                  id="padding-digits"
+                  type="number"
+                  min={1}
+                  max={10}
+                  step={1}
+                  required
+                  value={numberingDraft.paddingDigits}
+                  onChange={(event) => setNumberingField('paddingDigits', Number(event.target.value))}
+                />
+              </Field>
+            </div>
+            <div className="grid gap-3 rounded-lg bg-muted/30 p-3 text-sm sm:grid-cols-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">Next Normal invoice</span>
+                <span className="font-mono font-semibold">{nextInvoiceNumber(numberingDraft, 'normal')}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">Next GST invoice</span>
+                <span className="font-mono font-semibold">{nextInvoiceNumber(numberingDraft, 'gst')}</span>
+              </div>
+            </div>
+            {numberingError && <p role="alert" className="text-sm text-destructive">{numberingError}</p>}
+            {numberingMessage && <p role="status" className="text-sm text-muted-foreground">{numberingMessage}</p>}
+            <div>
+              <Button type="submit" disabled={updateNumbering.isPending}>
+                <Save data-icon="inline-start" />
+                {updateNumbering.isPending ? 'Saving…' : 'Save Settings'}
+              </Button>
+            </div>
+          </form>
         )
       case 'system':
         return (
@@ -512,7 +777,11 @@ export function SettingsPage() {
               </CardHeader>
               <CardContent>
                 {configurationQuery.isLoading ? (
-                  <p className="text-sm text-muted-foreground">Loading configurations…</p>
+                  <div className="flex flex-col gap-2">
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                    <Skeleton className="h-9 w-full" />
+                  </div>
                 ) : configurationQuery.error ? (
                   <p role="alert" className="text-sm text-destructive">{configurationQuery.error.message}</p>
                 ) : configurations.length === 0 ? (
@@ -578,44 +847,60 @@ export function SettingsPage() {
 
   return (
     <PageLayout title="Profile settings" description="Manage company details and global application settings.">
-      <div className="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <Tabs
+        value={section}
+        onValueChange={(value) => setSection(value as SettingsSection)}
+        orientation="vertical"
+        className="grid items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]"
+      >
         <aside className="lg:sticky lg:top-6">
-          <nav aria-label="Settings sections" className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:flex lg:flex-col">
-            {sections.map((item) => (
-              <Button
-                key={item.id}
-                type="button"
-                variant={item.id === section ? 'secondary' : 'ghost'}
-                className="justify-start"
-                aria-current={item.id === section ? 'page' : undefined}
-                onClick={() => setSection(item.id)}
-              >
-                <item.icon data-icon="inline-start" />
-                <span className="truncate">{item.label}</span>
-              </Button>
-            ))}
-          </nav>
+          <div className="rounded-xl border border-border/80 bg-card/70 p-2 shadow-xs">
+            <p className="px-3 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Settings sections
+            </p>
+            <TabsList
+              aria-label="Settings sections"
+              className="flex h-auto w-full flex-col gap-1 bg-transparent p-0"
+            >
+              {sections.map((item) => (
+                <TabsTrigger
+                  key={item.id}
+                  value={item.id}
+                  className="w-full justify-start border-l-2 border-transparent px-3 py-2 text-left text-muted-foreground hover:bg-accent hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:font-semibold data-[state=active]:text-primary"
+                >
+                  <item.icon className="size-4" />
+                  <span className="truncate">{item.label}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
         </aside>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <activeSection.icon aria-hidden="true" />
+        <TabsContent value={section} className="mt-0">
+          <Card>
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <activeSection.icon className="size-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <CardTitle>{activeSection.label}</CardTitle>
+                  <CardDescription>
+                    {section === 'system'
+                      ? 'Create and manage extensible application configuration values.'
+                      : section === 'invoiceNumbering'
+                        ? 'Configure the independent Normal and GST invoice sequences.'
+                        : section === 'whatsapp'
+                          ? 'Configure the WhatsApp API credentials used by WhatsApp features.'
+                          : 'Review and update your organization profile.'}
+                  </CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle>{activeSection.label}</CardTitle>
-                <CardDescription>
-                  {section === 'system'
-                    ? 'Create and manage extensible application configuration values.'
-                    : 'Review and update your organization profile.'}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>{renderContent()}</CardContent>
-        </Card>
-      </div>
+            </CardHeader>
+            <CardContent>{renderContent()}</CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </PageLayout>
   )
 }

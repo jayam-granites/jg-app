@@ -100,7 +100,7 @@ function drawInfo(doc: jsPDF, inv: any, mode: 'invoice' | 'adjusted' | 'taxInvoi
         { label: 'Name:', value: customer.name },
         { label: 'Address:', value: address, wrap: true },
         ...(mode !== 'invoice'
-          ? [{ label: 'Party GSTIN:', value: customer.gstNumber || '—' }]
+          ? [{ label: 'Party GSTIN:', value: inv.gstNumber || customer.gstNumber || '—' }]
           : []),
         { label: 'Phone:', value: customer.mobile || customer.phone || inv.customerMobile || '-' },
       ],

@@ -61,20 +61,20 @@ export function DataTablePagination<TData>({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 rounded-md"
+          className="size-8 rounded-md"
           onClick={() => table.setPageIndex(0)}
           disabled={!table.getCanPreviousPage()}
         >
-          <ChevronsLeft className="h-3.5 w-3.5" />
+          <ChevronsLeft className="size-3.5" />
         </Button>
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 rounded-md"
+          className="size-8 rounded-md"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
+          <ChevronLeft className="size-3.5" />
         </Button>
 
         <div className="hidden sm:flex items-center gap-1 px-1">
@@ -112,20 +112,20 @@ export function DataTablePagination<TData>({
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 rounded-md"
+          className="size-8 rounded-md"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          <ChevronRight className="h-3.5 w-3.5" />
+          <ChevronRight className="size-3.5" />
         </Button>
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 rounded-md"
+          className="size-8 rounded-md"
           onClick={() => table.setPageIndex(totalPages - 1)}
           disabled={!table.getCanNextPage()}
         >
-          <ChevronsRight className="h-3.5 w-3.5" />
+          <ChevronsRight className="size-3.5" />
         </Button>
       </div>
     </div>

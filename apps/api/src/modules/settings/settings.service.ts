@@ -1,4 +1,10 @@
 import { Prisma } from '@prisma/client'
+import {
+  DEFAULT_INVOICE_NUMBER_SETTINGS,
+  type InvoiceNumberScope,
+  type InvoiceNumberSettings,
+  type WhatsAppSettings,
+} from '@jg-app/shared'
 import { ValidationError } from '#/lib/errors'
 import { settingsRepository } from './settings.repository'
 
@@ -157,6 +163,53 @@ function configurationData(data: ConfigurationInput) {
   }
 }
 
+function validateInvoiceNumbering(data: InvoiceNumberSettings) {
+  for (const [label, prefix] of [
+    ['Normal invoice prefix', data.normalPrefix],
+    ['GST invoice prefix', data.gstPrefix],
+  ] as const) {
+    const value = prefix.trim()
+    if (!value || value.length > 50 || !/^[A-Za-z0-9\-_/]+$/.test(value) || !value.endsWith('/')) {
+      throw new ValidationError(`${label} must be at most 50 characters, contain only letters, numbers, -, _ or /, and end with '/'`)
+    }
+  }
+  if (data.normalPrefix.trim() === data.gstPrefix.trim()) {
+    throw new ValidationError('Normal and GST invoice prefixes must be different')
+  }
+  for (const [label, value] of [
+    ['Current normal invoice number', data.normalCurrentNumber],
+    ['Current GST invoice number', data.gstCurrentNumber],
+  ] as const) {
+    if (!Number.isInteger(value) || value < 0 || value > 999_999_999) {
+      throw new ValidationError(`${label} must be a whole number between 0 and 999999999`)
+    }
+  }
+  if (!Number.isInteger(data.paddingDigits) || data.paddingDigits < 1 || data.paddingDigits > 10) {
+    throw new ValidationError('Number padding digits must be between 1 and 10')
+  }
+}
+
+function validateWhatsAppSettings(data: WhatsAppSettings) {
+  const apiUrl = normalized(data.apiUrl)
+  if (apiUrl.length > 500) {
+    throw new ValidationError('WhatsApp API URL must be at most 500 characters')
+  }
+  if (apiUrl) {
+    try {
+      const parsed = new URL(apiUrl)
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error()
+    } catch {
+      throw new ValidationError('WhatsApp API URL must be a valid HTTP or HTTPS URL')
+    }
+  }
+  if (normalized(data.apiKey).length > 1000) {
+    throw new ValidationError('WhatsApp API key must be at most 1000 characters')
+  }
+  if (normalized(data.sessionId).length > 200) {
+    throw new ValidationError('WhatsApp session ID must be at most 200 characters')
+  }
+}
+
 export const settingsService = {
   getProfile() {
     return settingsRepository.getProfile()
@@ -194,5 +247,73 @@ export const settingsService = {
 
   deleteConfiguration(id: string) {
     return settingsRepository.deleteConfiguration(id)
+  },
+
+  getWhatsAppSettings() {
+    return settingsRepository.getWhatsAppSettings()
+  },
+
+  async updateWhatsAppSettings(data: WhatsAppSettings): Promise<WhatsAppSettings> {
+    validateWhatsAppSettings(data)
+    const settings: WhatsAppSettings = {
+      apiUrl: normalized(data.apiUrl),
+      apiKey: normalized(data.apiKey),
+      sessionId: normalized(data.sessionId),
+    }
+    return settingsRepository.saveWhatsAppSettings(settings)
+  },
+
+  /** Self-healing read: both sequence rows are created with defaults if absent. */
+  async getInvoiceNumbering(): Promise<InvoiceNumberSettings> {
+    const defaults = DEFAULT_INVOICE_NUMBER_SETTINGS
+    await Promise.all([
+      settingsRepository.upsertInvoiceNumberSequence('normal', {
+        prefix: defaults.normalPrefix,
+        currentNumber: defaults.normalCurrentNumber,
+        paddingDigits: defaults.paddingDigits,
+      }),
+      settingsRepository.upsertInvoiceNumberSequence('gst', {
+        prefix: defaults.gstPrefix,
+        currentNumber: defaults.gstCurrentNumber,
+        paddingDigits: defaults.paddingDigits,
+      }),
+    ])
+    const rows = await settingsRepository.getInvoiceNumberSequences()
+    const normal = rows.find((row) => row.scope === 'normal')
+    const gst = rows.find((row) => row.scope === 'gst')
+    return {
+      normalPrefix: normal?.prefix ?? defaults.normalPrefix,
+      normalCurrentNumber: normal?.currentNumber ?? defaults.normalCurrentNumber,
+      gstPrefix: gst?.prefix ?? defaults.gstPrefix,
+      gstCurrentNumber: gst?.currentNumber ?? defaults.gstCurrentNumber,
+      paddingDigits: normal?.paddingDigits ?? gst?.paddingDigits ?? defaults.paddingDigits,
+    }
+  },
+
+  async updateInvoiceNumbering(data: InvoiceNumberSettings): Promise<InvoiceNumberSettings> {
+    validateInvoiceNumbering(data)
+    // Prevent rewinding a counter behind invoices already issued, which would
+    // otherwise cause a duplicate invoice number on the next sale.
+    const [normalMaxUsed, gstMaxUsed] = await Promise.all([
+      settingsRepository.findMaxUsedInvoiceSequence('normal' as InvoiceNumberScope),
+      settingsRepository.findMaxUsedInvoiceSequence('gst' as InvoiceNumberScope),
+    ])
+    if (data.normalCurrentNumber < normalMaxUsed) {
+      throw new ValidationError(`Current normal invoice number cannot be below ${normalMaxUsed} (highest invoice already issued)`)
+    }
+    if (data.gstCurrentNumber < gstMaxUsed) {
+      throw new ValidationError(`Current GST invoice number cannot be below ${gstMaxUsed} (highest invoice already issued)`)
+    }
+
+    const settings: InvoiceNumberSettings = {
+      normalPrefix: data.normalPrefix.trim(),
+      normalCurrentNumber: data.normalCurrentNumber,
+      gstPrefix: data.gstPrefix.trim(),
+      gstCurrentNumber: data.gstCurrentNumber,
+      paddingDigits: data.paddingDigits,
+    }
+    await this.getInvoiceNumbering()
+    await settingsRepository.saveInvoiceNumbering(settings)
+    return settings
   },
 }

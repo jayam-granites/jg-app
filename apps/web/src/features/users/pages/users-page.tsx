@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Ban, CheckCircle2, KeyRound, MoreHorizontal, Plus, Shield, Trash2, UsersRound } from 'lucide-react'
-import { hasMinimumRole, isAppRole, ROLES, type AppRole, type User, type UserDto } from '@jg-app/shared'
+import { canManageRole, normalizeRole, ROLES, type AppRole, type User, type UserDto } from '@jg-app/shared'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,8 +29,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { PageLayout } from '@/shared/components/page-layout'
-import { authClient } from '@/lib/api'
-import { formatDateTime } from '@/lib/date'
+import { useAuth } from '@/providers/auth'
+import { formatDate } from '@/lib/date'
 import {
   useCreateUser,
   useDeleteUser,
@@ -41,9 +42,12 @@ import {
 
 const roleLabels: Record<AppRole, string> = {
   sales: 'Sales',
-  manager: 'Manager',
   admin: 'Admin',
-  super_admin: 'Super admin',
+  superadmin: 'Super admin',
+}
+
+function labelForRole(role: string): string {
+  return roleLabels[normalizeRole(role) ?? 'sales']
 }
 
 export function UsersPage() {
@@ -53,10 +57,10 @@ export function UsersPage() {
   const deleteUser = useDeleteUser()
   const setSuspended = useSetUserSuspended()
   const updatePassword = useUpdateUserPassword()
-  const { data: session } = authClient.useSession()
-  const callerId = session?.user.id
-  const callerRole = isAppRole(session?.user.role) ? session.user.role : 'sales'
-  const assignableRoles = ROLES.filter((role) => hasMinimumRole(callerRole, role))
+  const { user } = useAuth()
+  const callerId = user?.id
+  const callerRole = user?.role ?? 'sales'
+  const assignableRoles = ROLES.filter((role) => canManageRole(callerRole, role))
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -109,8 +113,8 @@ export function UsersPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <UsersRound className="h-5 w-5" />
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <UsersRound className="size-5" />
               </div>
               <div>
                 <CardTitle>Team members</CardTitle>
@@ -124,10 +128,20 @@ export function UsersPage() {
                 {loadError.message}
               </p>
             ) : isLoading ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Loading users…</p>
+              <div className="flex flex-col gap-3" aria-busy="true">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <Skeleton className="size-8 rounded-full" />
+                    <div className="flex flex-1 flex-col gap-2">
+                      <Skeleton className="h-4 w-40" />
+                      <Skeleton className="h-3 w-56" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : users.length === 0 ? (
               <div className="py-12 text-center">
-                <UsersRound className="mx-auto mb-3 h-8 w-8 text-muted-foreground/60" />
+                <UsersRound className="mx-auto mb-3 size-8 text-muted-foreground/60" />
                 <p className="font-medium">No users yet</p>
                 <p className="mt-1 text-sm text-muted-foreground">Create a team account to get started.</p>
               </div>
@@ -145,8 +159,9 @@ export function UsersPage() {
                   <TableBody>
                     {users.map((user) => {
                       const isSelf = user.id === callerId
-                      const isSuperAdmin = user.role === 'super_admin'
-                      const canManageTarget = callerRole === 'super_admin' || !isSuperAdmin
+                      const targetRole = normalizeRole(user.role) ?? 'sales'
+                      const isSuperAdmin = targetRole === 'superadmin'
+                      const canManageTarget = canManageRole(callerRole, targetRole)
 
                       return (
                         <TableRow key={user.id}>
@@ -154,7 +169,7 @@ export function UsersPage() {
                             <div className="flex items-center gap-2">
                               <p className="font-medium">{user.name}{isSelf ? ' (you)' : ''}</p>
                               {user.isSuspended && (
-                                <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
+                                <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive">
                                   Suspended
                                 </span>
                               )}
@@ -166,7 +181,7 @@ export function UsersPage() {
                               <select
                                 aria-label={`Role for ${user.name}`}
                                 className="h-9 min-w-32 rounded-md border border-input bg-background px-2 text-sm"
-                                value={user.role}
+                                value={targetRole}
                                 disabled={isMutating}
                                 onChange={(event) => {
                                   const nextRole = event.target.value as AppRole
@@ -179,13 +194,13 @@ export function UsersPage() {
                               </select>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-                                {roleLabels[user.role]}
-                                {isSuperAdmin && <Shield className="h-3.5 w-3.5 text-primary" />}
+                                {labelForRole(user.role)}
+                                {isSuperAdmin && <Shield className="size-3.5 text-primary" />}
                               </span>
                             )}
                           </TableCell>
                           <TableCell className="hidden whitespace-nowrap text-sm text-muted-foreground md:table-cell">
-                            {formatDateTime(user.createdAt)}
+                            {formatDate(user.createdAt)}
                           </TableCell>
                           <TableCell className="text-right">
                             {!isSelf && canManageTarget && (
@@ -197,7 +212,7 @@ export function UsersPage() {
                                     aria-label={`Actions for ${user.name}`}
                                     disabled={isMutating}
                                   >
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <MoreHorizontal className="size-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-48">
@@ -208,7 +223,7 @@ export function UsersPage() {
                                       updatePassword.reset()
                                     }}
                                   >
-                                    <KeyRound className="h-4 w-4" />
+                                    <KeyRound className="size-4" />
                                     Update password
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
@@ -220,9 +235,9 @@ export function UsersPage() {
                                     }
                                   >
                                     {user.isSuspended ? (
-                                      <CheckCircle2 className="h-4 w-4" />
+                                      <CheckCircle2 className="size-4" />
                                     ) : (
-                                      <Ban className="h-4 w-4" />
+                                      <Ban className="size-4" />
                                     )}
                                     {user.isSuspended ? 'Reactivate' : 'Suspend'}
                                   </DropdownMenuItem>
@@ -231,7 +246,7 @@ export function UsersPage() {
                                     className="text-destructive focus:text-destructive"
                                     onSelect={() => handleDelete(user)}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="size-4" />
                                     Delete
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -257,8 +272,8 @@ export function UsersPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Plus className="h-5 w-5" />
+                <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Plus className="size-5" />
                 </div>
                 <div>
                   <CardTitle>Create user</CardTitle>
@@ -325,7 +340,7 @@ export function UsersPage() {
                   <p className="text-sm text-destructive" role="alert">{createUser.error.message}</p>
                 )}
                 <Button type="submit" className="w-full" disabled={createUser.isPending}>
-                  <KeyRound className="h-4 w-4" />
+                  <KeyRound className="size-4" />
                   {createUser.isPending ? 'Creating account…' : 'Create account'}
                 </Button>
                 <p className="text-xs leading-relaxed text-muted-foreground">
@@ -345,7 +360,7 @@ export function UsersPage() {
                 <div key={item} className="flex items-center justify-between gap-3 text-sm">
                   <span>{roleLabels[item]}</span>
                   <span className="text-xs text-muted-foreground">
-                    {item === 'sales' ? 'Base access' : item === 'super_admin' ? 'Full access' : 'Elevated access'}
+                    {item === 'sales' ? 'Base access' : item === 'superadmin' ? 'Full access' : 'Elevated access'}
                   </span>
                 </div>
               ))}

@@ -1,3 +1,4 @@
+import { capitalizeName } from '@jg-app/shared'
 import { transportRepository } from './transport.repository'
 import { ValidationError } from '#/lib/errors'
 
@@ -19,7 +20,10 @@ export const transportService = {
     address?: string
     isActive?: boolean
   }) {
-    return transportRepository.create(data)
+    return transportRepository.create({
+      ...data,
+      name: capitalizeName(data.name),
+    })
   },
 
   async update(
@@ -34,6 +38,9 @@ export const transportService = {
   ) {
     const existing = await transportRepository.findById(id)
     if (!existing) throw new ValidationError('Transport provider not found')
-    return transportRepository.update(id, data)
+    return transportRepository.update(id, {
+      ...data,
+      ...(data.name !== undefined ? { name: capitalizeName(data.name) } : {}),
+    })
   },
 }

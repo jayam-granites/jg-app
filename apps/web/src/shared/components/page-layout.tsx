@@ -11,15 +11,15 @@ type PageLayoutProps = {
 
 export function PageLayout({ title, description, action, children, className }: PageLayoutProps) {
   return (
-    <div className={cn('space-y-6', className)}>
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between print:hidden">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+    <div className={cn('flex flex-col gap-6', className)}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between print:hidden">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
           )}
         </div>
-        {action && <div className="shrink-0 mt-2 sm:mt-0">{action}</div>}
+        {action && <div className="mt-2 shrink-0 sm:mt-0">{action}</div>}
       </div>
       {children}
     </div>

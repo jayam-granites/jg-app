@@ -4,6 +4,7 @@ import { logger } from '#/lib/logger'
 import { expenseSchedulesService } from './expense-schedules.service'
 import { taskRemindersService } from '../tasks/task-reminders.service'
 import { createDailyDatabaseBackup } from '../backups/database-backup'
+import { registerProductImportWorkers } from '../product-import/product-import.worker'
 
 const expenseScheduleQueue = 'generate-expense-schedules'
 const taskReminderQueue = 'send-task-reminders'
@@ -17,6 +18,8 @@ export async function startScheduledWorkers() {
 
   await boss.start()
   try {
+    await registerProductImportWorkers(boss)
+
     await boss.createQueue(expenseScheduleQueue)
     await boss.work(expenseScheduleQueue, async () => {
       const result = await expenseSchedulesService.processDueSchedules()

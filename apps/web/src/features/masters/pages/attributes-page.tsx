@@ -109,7 +109,7 @@ export function AttributesPage() {
           return (
             <Badge
               variant={active ? 'default' : 'secondary'}
-              className="rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium"
+              className="rounded-full border-0 px-2.5 py-0.5 text-xs font-medium"
             >
               {active ? 'Active' : 'Inactive'}
             </Badge>
@@ -188,8 +188,8 @@ export function AttributesPage() {
       title="Attributes"
       description="Define product attributes like thickness, finish, and size for variant management"
       action={
-        <Button onClick={() => setIsOpen(true)} className="rounded-lg shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> Create Attribute
+        <Button onClick={() => setIsOpen(true)} className="rounded-lg shadow-xs">
+          <Plus className="mr-2 size-4" /> Create Attribute
         </Button>
       }
     >
@@ -295,7 +295,7 @@ export function AttributesPage() {
             >
               {createAttribute.isPending || updateAttribute.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                  <Loader2 className="mr-2 size-4 animate-spin" /> Saving...
                 </>
               ) : (
                 'Save Attribute'

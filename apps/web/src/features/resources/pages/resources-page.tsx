@@ -4,33 +4,31 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { safeParse } from 'valibot'
 import {
   CreateResourceContactSchema,
-  type CreateResourceContactFormData,
+  UpdateResourceContactSchema,
 } from '@jg-app/validators'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { DataTable } from '@/shared/components/data-table'
 import type { DataTableRowAction } from '@/shared/components/data-table'
 import { PageLayout } from '@/shared/components/page-layout'
-import { useArchiveResource, useCreateResource, useResources, useUpdateResource } from '../hooks/use-resources'
+import {
+  useArchiveResource,
+  useCreateResource,
+  useResources,
+  useUpdateResource,
+  type ResourceRow,
+  type TierGroup,
+  type TradeContactType,
+} from '../hooks/use-resources'
 
-type ResourceRow = {
-  id: number
-  name: string
-  category: CreateResourceContactFormData['category']
-  mobile: string | null
-  address: string | null
-  stdWageRate: number | string | null
-  isAvailable: boolean
-  notes: string | null
-  isActive: boolean
-}
-
-const categories: CreateResourceContactFormData['category'][] = [
+const contactTypeOptions: TradeContactType[] = [
   'ENGINEER',
   'BUILDER',
   'MASTRI',
@@ -39,9 +37,22 @@ const categories: CreateResourceContactFormData['category'][] = [
   'LABOR_LOADING',
   'OTHER_UTILITY',
 ]
+const tierGroupOptions: TierGroup[] = ['GOLD', 'SILVER', 'BRONZE']
+
+function formatLabel(value: string): string {
+  return value
+    .split('_')
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(' ')
+}
 
 export function ResourcesPage() {
-  const { data: response, isLoading } = useResources()
+  const [contactTypeFilter, setContactTypeFilter] = useState<'all' | TradeContactType>('all')
+  const [tierGroupFilter, setTierGroupFilter] = useState<'all' | TierGroup>('all')
+  const { data: response, isLoading } = useResources({
+    contactType: contactTypeFilter === 'all' ? undefined : contactTypeFilter,
+    tierGroup: tierGroupFilter === 'all' ? undefined : tierGroupFilter,
+  })
   const createResource = useCreateResource()
   const updateResource = useUpdateResource()
   const archiveResource = useArchiveResource()
@@ -50,12 +61,11 @@ export function ResourcesPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<ResourceRow | null>(null)
   const [name, setName] = useState('')
-  const [category, setCategory] = useState<ResourceRow['category']>('ENGINEER')
   const [mobile, setMobile] = useState('')
+  const [contactType, setContactType] = useState<TradeContactType>(contactTypeOptions[0])
+  const [tierGroup, setTierGroup] = useState<'none' | TierGroup>('none')
+  const [productNotes, setProductNotes] = useState('')
   const [address, setAddress] = useState('')
-  const [stdWageRate, setStdWageRate] = useState('')
-  const [notes, setNotes] = useState('')
-  const [isAvailable, setIsAvailable] = useState(true)
   const [isActive, setIsActive] = useState(true)
   const [error, setError] = useState('')
 
@@ -64,12 +74,11 @@ export function ResourcesPage() {
     if (!nextOpen) {
       setEditing(null)
       setName('')
-      setCategory('ENGINEER')
       setMobile('')
+      setContactType(contactTypeOptions[0])
+      setTierGroup('none')
+      setProductNotes('')
       setAddress('')
-      setStdWageRate('')
-      setNotes('')
-      setIsAvailable(true)
       setIsActive(true)
       setError('')
     }
@@ -78,12 +87,11 @@ export function ResourcesPage() {
   const edit = (resource: ResourceRow) => {
     setEditing(resource)
     setName(resource.name)
-    setCategory(resource.category)
     setMobile(resource.mobile ?? '')
+    setContactType(resource.contactType)
+    setTierGroup(resource.tierGroup ?? 'none')
+    setProductNotes(resource.productNotes ?? '')
     setAddress(resource.address ?? '')
-    setStdWageRate(resource.stdWageRate == null ? '' : String(resource.stdWageRate))
-    setNotes(resource.notes ?? '')
-    setIsAvailable(resource.isAvailable)
     setIsActive(resource.isActive)
     setError('')
     setOpen(true)
@@ -105,33 +113,57 @@ export function ResourcesPage() {
 
   const columns: ColumnDef<ResourceRow>[] = [
     { accessorKey: 'name', header: 'Name' },
-    { accessorKey: 'category', header: 'Category' },
-    { accessorKey: 'mobile', header: 'Mobile' },
     {
-      accessorKey: 'stdWageRate',
-      header: 'Standard wage',
-      cell: ({ getValue }) => {
-        const value = getValue<number | string | null>()
-        return value == null ? '-' : `₹${Number(value).toLocaleString('en-IN')}`
-      },
+      accessorKey: 'contactType',
+      header: 'Contact type',
+      cell: ({ getValue }) => <Badge variant="outline">{formatLabel(getValue<TradeContactType>())}</Badge>,
     },
     {
-      accessorKey: 'isAvailable',
-      header: 'Availability',
+      accessorKey: 'tierGroup',
+      header: 'Tier',
+      cell: ({ getValue }) => {
+        const tier = getValue<TierGroup | null>()
+        if (!tier) return '—'
+        return (
+          <Badge
+            variant={tier === 'GOLD' ? 'default' : tier === 'SILVER' ? 'secondary' : 'outline'}
+            className={cn('rounded-full px-2.5 py-0.5 text-xs', tier === 'BRONZE' && 'text-muted-foreground')}
+          >
+            {tier}
+          </Badge>
+        )
+      },
+    },
+    { accessorKey: 'mobile', header: 'Mobile' },
+    {
+      accessorKey: 'address',
+      header: 'Address',
       cell: ({ getValue }) => (
-        <Badge variant={getValue<boolean>() ? 'default' : 'secondary'}>
-          {getValue<boolean>() ? 'Available' : 'Unavailable'}
-        </Badge>
+        <span className="block max-w-[200px] truncate text-muted-foreground">
+          {getValue<string | null>() || '—'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: 'productNotes',
+      header: 'Product notes',
+      cell: ({ getValue }) => (
+        <span className="block max-w-[240px] truncate text-muted-foreground">
+          {getValue<string | null>() || '—'}
+        </span>
       ),
     },
     {
       accessorKey: 'isActive',
       header: 'Record',
-      cell: ({ getValue }) => (
-        <Badge variant={getValue<boolean>() ? 'outline' : 'secondary'}>
-          {getValue<boolean>() ? 'Active' : 'Archived'}
-        </Badge>
-      ),
+      cell: ({ getValue }) => {
+        const active = getValue<boolean>()
+        return (
+          <Badge variant={active ? 'outline' : 'secondary'}>
+            {active ? 'Active' : 'Archived'}
+          </Badge>
+        )
+      },
     },
   ]
 
@@ -140,27 +172,31 @@ export function ResourcesPage() {
     setError('')
     const data = {
       name: name.trim(),
-      category,
       mobile: mobile.trim() || undefined,
+      contactType,
+      tierGroup: tierGroup === 'none' ? undefined : tierGroup,
+      productNotes: productNotes.trim() || undefined,
       address: address.trim() || undefined,
-      stdWageRate: stdWageRate ? Number(stdWageRate) : undefined,
-      notes: notes.trim() || undefined,
-      isAvailable,
       isActive,
-    }
-    const parsed = safeParse(CreateResourceContactSchema, data)
-    if (!parsed.success) {
-      setError(parsed.issues[0]?.message ?? 'Check the resource details')
-      return
     }
 
     const onError = (reason: Error) => setError(reason.message)
     if (editing) {
+      const parsed = safeParse(UpdateResourceContactSchema, data)
+      if (!parsed.success) {
+        setError(parsed.issues[0]?.message ?? 'Check the contact details')
+        return
+      }
       updateResource.mutate(
         { id: editing.id, data: parsed.output },
         { onSuccess: () => reset(false), onError },
       )
     } else {
+      const parsed = safeParse(CreateResourceContactSchema, data)
+      if (!parsed.success) {
+        setError(parsed.issues[0]?.message ?? 'Check the contact details')
+        return
+      }
       createResource.mutate(parsed.output, { onSuccess: () => reset(false), onError })
     }
   }
@@ -169,23 +205,59 @@ export function ResourcesPage() {
 
   return (
     <PageLayout
-      title="Workforce & Resources"
-      description="Manage tradespeople and site resources"
+      title="Trade Contacts"
+      description="Engineers, Builders and Mastris you work with repeatedly."
       action={
         <Button onClick={() => setOpen(true)}>
-          <Plus data-icon="inline-start" /> Add resource
+          <Plus data-icon="inline-start" /> Add contact
         </Button>
       }
     >
       <DataTable
         columns={columns}
         data={resources}
-        searchKey={{ id: 'name', placeholder: 'Search resources...' }}
+        searchKey={{ id: 'name', placeholder: 'Search trade contacts...' }}
+        toolbarChildren={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={contactTypeFilter}
+              onValueChange={(value) => setContactTypeFilter(value as 'all' | TradeContactType)}
+            >
+              <SelectTrigger className="w-[150px] text-xs" aria-label="Filter by contact type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All types</SelectItem>
+                  {contactTypeOptions.map((type) => (
+                    <SelectItem key={type} value={type}>{formatLabel(type)}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Select
+              value={tierGroupFilter}
+              onValueChange={(value) => setTierGroupFilter(value as 'all' | TierGroup)}
+            >
+              <SelectTrigger className="w-[130px] text-xs" aria-label="Filter by tier">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All tiers</SelectItem>
+                  {tierGroupOptions.map((tier) => (
+                    <SelectItem key={tier} value={tier}>{tier}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        }
         rowActions={rowActions}
         isLoading={isLoading}
         emptyState={{
-          title: 'No resources found',
-          description: 'Add an engineer, builder, or tradesperson to the directory.',
+          title: 'No trade contacts found',
+          description: 'Add an engineer, builder, or mastri to the directory.',
         }}
       />
       {(archiveResource.error || updateResource.error) && (
@@ -197,7 +269,7 @@ export function ResourcesPage() {
       <Sheet open={open} onOpenChange={reset}>
         <SheetContent className="flex h-full flex-col gap-6 sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>{editing ? 'Edit resource' : 'Add resource'}</SheetTitle>
+            <SheetTitle>{editing ? 'Edit contact' : 'Add contact'}</SheetTitle>
           </SheetHeader>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <form id="resource-form" onSubmit={handleSubmit} className="flex flex-col gap-4 overflow-y-auto">
@@ -206,46 +278,51 @@ export function ResourcesPage() {
               <Input id="resource-name" value={name} onChange={(event) => setName(event.target.value)} required />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="resource-category">Category</Label>
-              <select
-                id="resource-category"
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={category}
-                onChange={(event) => setCategory(event.target.value as ResourceRow['category'])}
-              >
-                {categories.map((value) => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-2">
               <Label htmlFor="resource-mobile">Mobile</Label>
               <Input id="resource-mobile" value={mobile} onChange={(event) => setMobile(event.target.value)} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="resource-contact-type">Contact type</Label>
+              <Select value={contactType} onValueChange={(value) => setContactType(value as TradeContactType)}>
+                <SelectTrigger id="resource-contact-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {contactTypeOptions.map((type) => (
+                      <SelectItem key={type} value={type}>{formatLabel(type)}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="resource-tier">Tier</Label>
+              <Select value={tierGroup} onValueChange={(value) => setTierGroup(value as 'none' | TierGroup)}>
+                <SelectTrigger id="resource-tier" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="none">No tier</SelectItem>
+                    {tierGroupOptions.map((tier) => (
+                      <SelectItem key={tier} value={tier}>{tier}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="resource-product-notes">Product notes</Label>
+              <Textarea id="resource-product-notes" value={productNotes} onChange={(event) => setProductNotes(event.target.value)} />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="resource-address">Address</Label>
               <Input id="resource-address" value={address} onChange={(event) => setAddress(event.target.value)} />
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="resource-wage">Standard wage rate</Label>
-              <Input
-                id="resource-wage"
-                type="number"
-                min="0"
-                step="0.01"
-                value={stdWageRate}
-                onChange={(event) => setStdWageRate(event.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="resource-notes">Notes</Label>
-              <Textarea id="resource-notes" value={notes} onChange={(event) => setNotes(event.target.value)} />
-            </div>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox checked={isAvailable} onCheckedChange={(checked) => setIsAvailable(checked === true)} />
-              Available for work
-            </label>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox checked={isActive} onCheckedChange={(checked) => setIsActive(checked === true)} />
-              Active record
+              Active contact
             </label>
           </form>
           <div className="mt-auto flex gap-2 border-t pt-4">
@@ -253,7 +330,7 @@ export function ResourcesPage() {
               Cancel
             </Button>
             <Button type="submit" form="resource-form" className="flex-1" disabled={saving}>
-              {saving ? 'Saving…' : 'Save resource'}
+              {saving ? 'Saving…' : 'Save contact'}
             </Button>
           </div>
         </SheetContent>

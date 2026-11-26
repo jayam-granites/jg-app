@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { Pencil, Plus, Trash2, Upload } from 'lucide-react'
 import type { ColumnDef, Row } from '@tanstack/react-table'
 import { DataTable } from '@/shared/components/data-table'
 import type { DataTableFilterableColumn } from '@/shared/components/data-table'
@@ -8,6 +8,8 @@ import type { DataTableRowAction } from '@/shared/components/data-table'
 import { PageLayout } from '@/shared/components/page-layout'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/providers/auth'
+import { ProductImportDialog } from '../components/product-import-dialog'
 import { useProducts, useDeleteProduct } from '../hooks/use-products'
 
 type VariantRow = {
@@ -51,7 +53,7 @@ function VariantSubTable({ row }: { row: Row<ProductRow> }) {
           <col style={{ width: '12%' }} />
         </colgroup>
         <thead className="bg-muted/40">
-          <tr className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <tr className="text-xs uppercase tracking-wide text-muted-foreground">
             <th className="px-3 py-2 text-left font-medium">SKU</th>
             <th className="px-3 py-2 text-left font-medium">Unit</th>
             <th className="px-3 py-2 text-left font-medium">Attributes</th>
@@ -77,16 +79,16 @@ function VariantSubTable({ row }: { row: Row<ProductRow> }) {
               <td className="px-3 py-2">
                 <span
                   className={cn(
-                    'inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium',
+                    'inline-flex items-center justify-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium',
                     v.isActive
-                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400'
+                      ? 'bg-success/12 text-success dark:bg-success/15 dark:text-success'
                       : 'bg-muted text-muted-foreground',
                   )}
                 >
                   <span
                     className={cn(
-                      'h-1.5 w-1.5 rounded-full',
-                      v.isActive ? 'bg-emerald-500' : 'bg-muted-foreground/40',
+                      'size-1.5 rounded-full',
+                      v.isActive ? 'bg-success/12' : 'bg-muted-foreground/40',
                     )}
                   />
                   {v.isActive ? 'Active' : 'Inactive'}
@@ -102,6 +104,9 @@ function VariantSubTable({ row }: { row: Row<ProductRow> }) {
 
 export function ProductsPage() {
   const navigate = useNavigate()
+  const { hasPermission } = useAuth()
+  const canWrite = hasPermission('catalog:write') && hasPermission('cost_control:write')
+  const [importOpen, setImportOpen] = useState(false)
   const { data: productsRes, isLoading } = useProducts()
   const deleteProduct = useDeleteProduct()
 
@@ -201,13 +206,13 @@ export function ProductsPage() {
             <span
               className={cn(
                 'inline-flex items-center gap-1.5 text-sm',
-                active ? 'text-emerald-600' : 'text-muted-foreground',
+                active ? 'text-success' : 'text-muted-foreground',
               )}
             >
               <span
                 className={cn(
-                  'h-1.5 w-1.5 rounded-full',
-                  active ? 'bg-emerald-500' : 'bg-muted-foreground/40',
+                  'size-1.5 rounded-full',
+                  active ? 'bg-success/12' : 'bg-muted-foreground/40',
                 )}
               />
               {active ? 'Active' : 'Inactive'}
@@ -252,13 +257,25 @@ export function ProductsPage() {
           : undefined
       }
       action={
-        <Button
-          onClick={() => navigate({ to: '/products/create' })}
-          className="rounded-lg shadow-sm"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Product
-        </Button>
+        <div className="flex items-center gap-2">
+          {canWrite && (
+            <Button
+              variant="outline"
+              onClick={() => setImportOpen(true)}
+              className="rounded-lg shadow-xs"
+            >
+              <Upload className="mr-2 size-4" />
+              Bulk Upload
+            </Button>
+          )}
+          <Button
+            onClick={() => navigate({ to: '/products/create' })}
+            className="rounded-lg shadow-xs"
+          >
+            <Plus className="mr-2 size-4" />
+            Add Product
+          </Button>
+        </div>
       }
     >
       <DataTable
@@ -279,6 +296,7 @@ export function ProductsPage() {
         getRowCanExpand={(row) => row.variants.length > 0}
         defaultPageSize={10}
       />
+      <ProductImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </PageLayout>
   )
 }

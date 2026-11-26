@@ -21,6 +21,7 @@ import { PageLayout } from '@/shared/components/page-layout'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -36,11 +37,11 @@ import { useDashboard } from '../hooks/use-dashboard'
 import { DonutChart, Sparkline, TrendChart } from '../components/charts'
 
 const STATUS_BADGE: Record<string, string> = {
-  PAID: 'border-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  PARTIAL_PAID: 'border-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  PENDING: 'border-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  PAID: 'border-0 bg-success/12 text-success dark:bg-success/15 dark:text-success',
+  PARTIAL_PAID: 'border-0 bg-warning/12 text-warning dark:bg-warning/15 dark:text-warning',
+  PENDING: 'border-0 bg-info/12 text-info dark:bg-info/15 dark:text-info',
   DRAFT: 'border-0 bg-muted text-muted-foreground',
-  CANCELLED: 'border-0 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  CANCELLED: 'border-0 bg-destructive/10 text-destructive dark:bg-destructive/30 dark:text-destructive',
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -64,9 +65,9 @@ type Tone = 'blue' | 'orange' | 'green' | 'red'
 
 const TONE_CLASSES: Record<Tone, string> = {
   blue: 'bg-primary/10 text-primary',
-  orange: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  green: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  red: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  orange: 'bg-warning/12 text-warning dark:bg-warning/15 dark:text-warning',
+  green: 'bg-success/12 text-success dark:bg-success/15 dark:text-success',
+  red: 'bg-destructive/10 text-destructive dark:bg-destructive/30 dark:text-destructive',
 }
 
 function KpiCard({
@@ -98,10 +99,10 @@ function KpiCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="mt-2 truncate text-2xl font-bold tracking-tight">{value}</p>
+            <p className="mt-2 truncate text-2xl font-semibold tracking-tight">{value}</p>
           </div>
-          <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', TONE_CLASSES[tone])}>
-            <Icon className="h-5 w-5" />
+          <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', TONE_CLASSES[tone])}>
+            <Icon className="size-5" />
           </span>
         </div>
 
@@ -111,12 +112,12 @@ function KpiCard({
               <div className="flex items-center gap-1 text-xs">
                 <ChangeIcon
                   className={cn(
-                    'h-3.5 w-3.5',
+                    'size-3.5',
                     change === 0
                       ? 'text-muted-foreground'
                       : good
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-red-600 dark:text-red-400',
+                        ? 'text-success dark:text-success'
+                        : 'text-destructive dark:text-destructive',
                   )}
                 />
                 <span
@@ -125,8 +126,8 @@ function KpiCard({
                     change === 0
                       ? 'text-muted-foreground'
                       : good
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-red-600 dark:text-red-400',
+                        ? 'text-success dark:text-success'
+                        : 'text-destructive dark:text-destructive',
                   )}
                 >
                   {change === 0 ? 'No change' : `${change! > 0 ? '+' : ''}${change!.toFixed(1)}%`}
@@ -169,14 +170,14 @@ function StatTile({
   tone: Tone
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-sm">
-      <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', TONE_CLASSES[tone])}>
-        <Icon className="h-4 w-4" />
+    <div className="flex items-center gap-3 rounded-xl border bg-card p-4 shadow-xs">
+      <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg', TONE_CLASSES[tone])}>
+        <Icon className="size-4" />
       </span>
       <div className="min-w-0">
         <p className="text-xs font-medium text-muted-foreground">{title}</p>
         <p className="truncate text-lg font-semibold leading-tight">{value}</p>
-        <p className="truncate text-[11px] text-muted-foreground">{caption}</p>
+        <p className="truncate text-xs text-muted-foreground">{caption}</p>
       </div>
     </div>
   )
@@ -198,19 +199,19 @@ export function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
-          <div className="h-4 w-72 animate-pulse rounded-md bg-muted" />
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-36 animate-pulse rounded-xl bg-muted" />
+            <Skeleton key={index} className="h-36 rounded-lg" />
           ))}
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="h-80 animate-pulse rounded-xl bg-muted lg:col-span-2" />
-          <div className="h-80 animate-pulse rounded-xl bg-muted" />
+          <Skeleton className="h-80 rounded-lg lg:col-span-2" />
+          <Skeleton className="h-80 rounded-lg" />
         </div>
       </div>
     )
@@ -221,7 +222,7 @@ export function DashboardPage() {
       <PageLayout title="Dashboard" description="Overview of your business performance">
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-            <AlertTriangle className="h-8 w-8 text-amber-500" />
+            <AlertTriangle className="size-8 text-warning" />
             <div>
               <p className="font-medium">Could not load dashboard insights</p>
               <p className="text-sm text-muted-foreground">
@@ -249,7 +250,7 @@ export function DashboardPage() {
       title="Dashboard"
       description={`Business performance for the last ${months} months`}
       action={
-        <div className="inline-flex rounded-lg border bg-card p-1 shadow-sm">
+        <div className="inline-flex rounded-lg border border-border/70 bg-card p-1 shadow-xs">
           {[6, 12].map((option) => (
             <Button
               key={option}
@@ -350,16 +351,16 @@ export function DashboardPage() {
                   : Lightbulb
             const color =
               insight.tone === 'positive'
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-success dark:text-success'
                 : insight.tone === 'negative'
-                  ? 'text-amber-600 dark:text-amber-400'
+                  ? 'text-warning dark:text-warning'
                   : 'text-primary'
             return (
               <div
                 key={insight.title}
-                className="flex items-start gap-3 rounded-xl border bg-card p-4 shadow-sm"
+                className="flex items-start gap-3 rounded-xl border bg-card p-4 shadow-xs"
               >
-                <Icon className={cn('mt-0.5 h-4 w-4 shrink-0', color)} />
+                <Icon className={cn('mt-0.5 size-4 shrink-0', color)} />
                 <div className="min-w-0">
                   <p className="text-sm font-medium leading-tight">{insight.title}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{insight.description}</p>
@@ -457,7 +458,7 @@ export function DashboardPage() {
           <CardContent>
             {lowStock.length === 0 ? (
               <div className="flex h-40 flex-col items-center justify-center gap-2 text-center">
-                <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+                <CheckCircle2 className="size-7 text-success" />
                 <p className="text-sm font-medium">Stock levels look healthy</p>
                 <p className="text-xs text-muted-foreground">No low-stock batches right now.</p>
               </div>
@@ -478,7 +479,7 @@ export function DashboardPage() {
                       <p className="text-sm font-medium">
                         {formatNumber(item.availableQty)} / {formatNumber(item.totalQty)} {item.unit}
                       </p>
-                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                      <p className="text-xs text-warning dark:text-warning">
                         {item.ratio.toFixed(0)}% remaining
                       </p>
                     </div>
@@ -523,7 +524,7 @@ export function DashboardPage() {
                         className={cn(
                           'text-right',
                           customer.outstanding > 0
-                            ? 'text-amber-600 dark:text-amber-400'
+                            ? 'text-warning dark:text-warning'
                             : 'text-muted-foreground',
                         )}
                       >
@@ -582,7 +583,7 @@ export function DashboardPage() {
                       <TableCell className="text-right">
                         <p className="font-medium">{formatCurrency(invoice.grandTotal)}</p>
                         {invoice.balanceAmount > 0 && (
-                          <p className="text-xs text-amber-600 dark:text-amber-400">
+                          <p className="text-xs text-warning dark:text-warning">
                             {formatCurrency(invoice.balanceAmount)} due
                           </p>
                         )}

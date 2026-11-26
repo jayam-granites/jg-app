@@ -1,4 +1,4 @@
-export const ROLES = ['sales', 'manager', 'admin', 'super_admin'] as const
+export const ROLES = ['sales', 'admin', 'superadmin'] as const
 
 export type AppRole = (typeof ROLES)[number]
 
@@ -8,9 +8,8 @@ export function isAppRole(role: string | null | undefined): role is AppRole {
 
 export const ROLE_HIERARCHY: Record<AppRole, number> = {
   sales: 10,
-  manager: 20,
   admin: 30,
-  super_admin: 40,
+  superadmin: 40,
 }
 
 export function hasMinimumRole(callerRole: AppRole, requiredRole: AppRole): boolean {

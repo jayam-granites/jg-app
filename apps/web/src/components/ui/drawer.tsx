@@ -10,7 +10,10 @@ const DrawerClose = VaulDrawer.Close
 function DrawerOverlay({ className, ...props }: ComponentProps<typeof VaulDrawer.Overlay>) {
   return (
     <VaulDrawer.Overlay
-      className={cn('fixed inset-0 z-50 bg-black/80', className)}
+      className={cn(
+        'fixed inset-0 z-50 bg-overlay duration-200 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+        className,
+      )}
       {...props}
     />
   )
@@ -26,7 +29,7 @@ function DrawerContent({
       <DrawerOverlay />
       <VaulDrawer.Content
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background',
+          'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-xl border border-border/80 bg-background shadow-lg',
           className,
         )}
         {...props}
@@ -56,7 +59,7 @@ function DrawerFooter({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
 function DrawerTitle({ className, ...props }: ComponentProps<typeof VaulDrawer.Title>) {
   return (
     <VaulDrawer.Title
-      className={cn('text-lg font-semibold leading-none tracking-tight', className)}
+      className={cn('text-base font-semibold leading-tight tracking-tight', className)}
       {...props}
     />
   )
@@ -65,7 +68,7 @@ function DrawerTitle({ className, ...props }: ComponentProps<typeof VaulDrawer.T
 function DrawerDescription({ className, ...props }: ComponentProps<typeof VaulDrawer.Description>) {
   return (
     <VaulDrawer.Description
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('text-sm leading-relaxed text-muted-foreground', className)}
       {...props}
     />
   )

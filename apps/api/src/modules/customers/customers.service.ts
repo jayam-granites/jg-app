@@ -1,3 +1,4 @@
+import { capitalizeName } from '@jg-app/shared'
 import { customersRepository } from './customers.repository'
 import { NotFoundError } from '#/lib/errors'
 
@@ -22,7 +23,10 @@ export const customersService = {
     pincode?: string
     gstNumber?: string
   }) {
-    return customersRepository.create(data)
+    return customersRepository.create({
+      ...data,
+      name: capitalizeName(data.name),
+    })
   },
 
   async update(
@@ -40,7 +44,10 @@ export const customersService = {
     },
   ) {
     await this.getById(id)
-    return customersRepository.update(id, data)
+    return customersRepository.update(id, {
+      ...data,
+      ...(data.name !== undefined ? { name: capitalizeName(data.name) } : {}),
+    })
   },
 
   async delete(id: number) {

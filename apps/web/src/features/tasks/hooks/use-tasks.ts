@@ -4,6 +4,12 @@ import type { CreateTaskFormData, UpdateTaskFormData } from '@jg-app/validators'
 
 const api = client as any
 
+type RelatedContact = {
+  id: number
+  name: string
+  mobile: string | null
+}
+
 export type TaskRecord = {
   id: number
   title: string
@@ -13,8 +19,16 @@ export type TaskRecord = {
   status: NonNullable<CreateTaskFormData['status']>
   enquiryId: number | null
   resourceId: number | null
-  enquiry: { id: number; customerName: string; mobile: string } | null
-  resource: { id: number; name: string; mobile: string | null } | null
+  customerId: number | null
+  supplierId: number | null
+  brokerId: number | null
+  transportId: number | null
+  enquiry: { id: number; customerName: string; mobile: string | null } | null
+  resource: RelatedContact | null
+  customer: RelatedContact | null
+  supplier: RelatedContact | null
+  broker: RelatedContact | null
+  transport: RelatedContact | null
 }
 
 export function useTasks() {

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client'
+import { capitalizeName } from '@jg-app/shared'
 import { measurementsRepository } from './measurements.repository'
 import { ConflictError } from '#/lib/errors'
 
@@ -21,7 +22,7 @@ export const measurementsService = {
 
   async create(data: { name?: string; phone?: string; address?: string; notes?: string }) {
     const payload = {
-      name: normalizeText(data.name) ?? '',
+      name: capitalizeName(normalizeText(data.name) ?? ''),
       phone: normalizeText(data.phone),
       address: normalizeText(data.address),
       notes: normalizeText(data.notes),
@@ -56,7 +57,7 @@ export const measurementsService = {
       isActive?: boolean
     } = {}
 
-    if (data.name !== undefined) payload.name = normalizeText(data.name) ?? ''
+    if (data.name !== undefined) payload.name = capitalizeName(normalizeText(data.name) ?? '')
     if (data.phone !== undefined) payload.phone = normalizeText(data.phone)
     if (data.address !== undefined) payload.address = normalizeText(data.address)
     if (data.notes !== undefined) payload.notes = normalizeText(data.notes)

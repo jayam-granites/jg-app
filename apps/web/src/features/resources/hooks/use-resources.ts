@@ -7,23 +7,44 @@ import type {
 
 const api = client as any
 
-export function useResources() {
+export type TradeContactType =
+  | 'ENGINEER'
+  | 'BUILDER'
+  | 'MASTRI'
+  | 'PLUMBER'
+  | 'ELECTRICIAN'
+  | 'LABOR_LOADING'
+  | 'OTHER_UTILITY'
+
+export type TierGroup = 'GOLD' | 'SILVER' | 'BRONZE'
+
+export type ResourceRow = {
+  id: number
+  name: string
+  mobile: string | null
+  contactType: TradeContactType
+  tierGroup: TierGroup | null
+  productNotes: string | null
+  address: string | null
+  isActive: boolean
+}
+
+export type ResourceFilters = {
+  contactType?: TradeContactType
+  tierGroup?: TierGroup
+}
+
+export function useResources(filters: ResourceFilters = {}) {
   return useQuery({
-    queryKey: ['resources'],
-    queryFn: () =>
-      api.api.resources.$get().then((response: Response) => response.json()) as Promise<{
-        data: {
-          id: number
-          name: string
-          category: CreateResourceContactFormData['category']
-          mobile: string | null
-          address: string | null
-          stdWageRate: number | string | null
-          isAvailable: boolean
-          notes: string | null
-          isActive: boolean
-        }[]
-      }>,
+    queryKey: ['resources', filters],
+    queryFn: () => {
+      const query: Record<string, string> = {}
+      if (filters.contactType) query.contactType = filters.contactType
+      if (filters.tierGroup) query.tierGroup = filters.tierGroup
+      return api.api.resources.$get({ query }).then((response: Response) => response.json()) as Promise<{
+        data: ResourceRow[]
+      }>
+    },
   })
 }
 
@@ -38,7 +59,11 @@ export function useCreateResource() {
       }
       return response.json()
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resources'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['crm'] })
+    },
   })
 }
 
@@ -62,7 +87,11 @@ export function useUpdateResource() {
       }
       return response.json()
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resources'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['crm'] })
+    },
   })
 }
 
@@ -76,6 +105,10 @@ export function useArchiveResource() {
       if (!response.ok) throw new Error('Failed to archive resource')
       return response.json()
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['resources'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['resources'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['crm'] })
+    },
   })
 }

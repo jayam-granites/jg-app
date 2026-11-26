@@ -1,3 +1,4 @@
+import { capitalizeName } from '@jg-app/shared'
 import { brokersRepository } from './brokers.repository'
 import { ValidationError } from '#/lib/errors'
 
@@ -19,7 +20,10 @@ export const brokersService = {
     commissionPercent?: number
     isActive?: boolean
   }) {
-    return brokersRepository.create(data)
+    return brokersRepository.create({
+      ...data,
+      name: capitalizeName(data.name),
+    })
   },
 
   async update(
@@ -34,6 +38,9 @@ export const brokersService = {
   ) {
     const existing = await brokersRepository.findById(id)
     if (!existing) throw new ValidationError('Broker not found')
-    return brokersRepository.update(id, data)
+    return brokersRepository.update(id, {
+      ...data,
+      ...(data.name !== undefined ? { name: capitalizeName(data.name) } : {}),
+    })
   },
 }

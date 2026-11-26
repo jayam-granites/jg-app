@@ -25,6 +25,20 @@ function formatDueDate(date: Date): string {
   }).format(date)
 }
 
+type ReminderContact = {
+  isActive?: boolean | null
+  mobile?: string | null
+}
+
+function addRecipient(
+  recipients: Map<string, string>,
+  contact: ReminderContact | null | undefined,
+) {
+  if (!contact?.isActive || !contact.mobile) return
+  const digits = contact.mobile.replace(/\D/g, '')
+  recipients.set(digits.length === 10 ? `91${digits}` : digits, contact.mobile)
+}
+
 export const taskRemindersService = {
   async sendDueReminders() {
     const now = new Date()
@@ -38,14 +52,12 @@ export const taskRemindersService = {
 
     for (const task of tasks) {
       const recipients = new Map<string, string>()
-      if (task.enquiry?.isActive && task.enquiry.mobile) {
-        const digits = task.enquiry.mobile.replace(/\D/g, '')
-        recipients.set(digits.length === 10 ? `91${digits}` : digits, task.enquiry.mobile)
-      }
-      if (task.resource?.isActive && task.resource.mobile) {
-        const digits = task.resource.mobile.replace(/\D/g, '')
-        recipients.set(digits.length === 10 ? `91${digits}` : digits, task.resource.mobile)
-      }
+      addRecipient(recipients, task.enquiry)
+      addRecipient(recipients, task.resource)
+      addRecipient(recipients, task.customer)
+      addRecipient(recipients, task.supplier)
+      addRecipient(recipients, task.broker)
+      addRecipient(recipients, task.transport)
 
       if (recipients.size === 0) {
         skipped += 1

@@ -195,7 +195,7 @@ export function RecordInvoicePaymentDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={savePayment} disabled={recordPayment.isPending || !invoice || balance <= 0.001}>
             {recordPayment.isPending
-              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+              ? <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</>
               : 'Record Payment'}
           </Button>
         </DialogFooter>

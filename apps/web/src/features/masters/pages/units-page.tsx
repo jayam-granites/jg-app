@@ -81,7 +81,7 @@ export function UnitsPage() {
           return (
             <Badge
               variant={active ? 'default' : 'secondary'}
-              className="rounded-full border-0 px-2.5 py-0.5 text-[11px] font-medium"
+              className="rounded-full border-0 px-2.5 py-0.5 text-xs font-medium"
             >
               {active ? 'Active' : 'Inactive'}
             </Badge>
@@ -156,8 +156,8 @@ export function UnitsPage() {
       title="Units"
       description="Manage units of measurement for products and inventory"
       action={
-        <Button onClick={() => setIsOpen(true)} className="rounded-lg shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> Create Unit
+        <Button onClick={() => setIsOpen(true)} className="rounded-lg shadow-xs">
+          <Plus className="mr-2 size-4" /> Create Unit
         </Button>
       }
     >
@@ -251,7 +251,7 @@ export function UnitsPage() {
             >
               {createUnit.isPending || updateUnit.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                  <Loader2 className="mr-2 size-4 animate-spin" /> Saving...
                 </>
               ) : (
                 'Save Unit'

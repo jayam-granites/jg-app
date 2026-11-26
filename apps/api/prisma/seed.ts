@@ -55,6 +55,11 @@ const SETTINGS: { key: string; value: string }[] = [
   { key: 'invoice.gstPercent', value: '18' },
 ]
 
+const INVOICE_NUMBER_SEQUENCES = [
+  { scope: 'normal', prefix: 'inv/', currentNumber: 0, paddingDigits: 3 },
+  { scope: 'gst', prefix: 'inv/2627/', currentNumber: 0, paddingDigits: 3 },
+] as const
+
 type AdminSeed = {
   email: string
   password: string
@@ -65,7 +70,7 @@ type AdminSeed = {
 function readAdminSeed(prefix: 'SEED_SUPER_ADMIN' | 'SEED_ADMIN', role: AppRole): AdminSeed | null {
   const email = process.env[`${prefix}_EMAIL`]?.trim().toLowerCase()
   const password = process.env[`${prefix}_PASSWORD`]
-  const name = process.env[`${prefix}_NAME`]?.trim() || (role === 'super_admin' ? 'Super Admin' : 'Admin')
+  const name = process.env[`${prefix}_NAME`]?.trim() || (role === 'superadmin' ? 'Super Admin' : 'Admin')
 
   if (!email && !password && !process.env[`${prefix}_NAME`]) return null
   if (!email || !password) {
@@ -107,7 +112,7 @@ async function seedAdmin({ email, password, name, role }: AdminSeed) {
 
 async function main() {
   const admins = [
-    readAdminSeed('SEED_SUPER_ADMIN', 'super_admin'),
+    readAdminSeed('SEED_SUPER_ADMIN', 'superadmin'),
     readAdminSeed('SEED_ADMIN', 'admin'),
   ].filter((admin): admin is AdminSeed => admin !== null)
 
@@ -137,6 +142,14 @@ async function main() {
       where: { key: setting.key },
       update: {},
       create: setting,
+    })
+  }
+
+  for (const sequence of INVOICE_NUMBER_SEQUENCES) {
+    await prisma.invoiceNumberSequence.upsert({
+      where: { scope: sequence.scope },
+      update: {},
+      create: sequence,
     })
   }
 

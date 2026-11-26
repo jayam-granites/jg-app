@@ -1,3 +1,4 @@
+import { capitalizeName } from '@jg-app/shared'
 import { suppliersRepository } from './suppliers.repository'
 import { ValidationError, ConflictError } from '#/lib/errors'
 
@@ -31,7 +32,10 @@ export const suppliersService = {
       }
     }
 
-    return suppliersRepository.create(data)
+    return suppliersRepository.create({
+      ...data,
+      name: capitalizeName(data.name),
+    })
   },
 
   async update(
@@ -59,6 +63,9 @@ export const suppliersService = {
       }
     }
 
-    return suppliersRepository.update(id, data)
+    return suppliersRepository.update(id, {
+      ...data,
+      ...(data.name !== undefined ? { name: capitalizeName(data.name) } : {}),
+    })
   },
 }

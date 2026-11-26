@@ -19,7 +19,7 @@ function TooltipContent({ className, sideOffset = 4, ...props }: React.Component
       <TooltipPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-75',
+          'z-50 overflow-hidden rounded-lg border border-border/80 bg-popover px-3 py-1.5 text-xs font-medium text-popover-foreground shadow-lg duration-150 ease-out animate-in fade-in-0 zoom-in-95',
           className,
         )}
         {...props}

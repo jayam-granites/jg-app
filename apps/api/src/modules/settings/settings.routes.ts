@@ -3,8 +3,12 @@ import { bodyLimit } from 'hono/body-limit'
 import { vValidator } from '@hono/valibot-validator'
 import {
   array,
+  integer,
   maxLength,
+  maxValue,
   minLength,
+  minValue,
+  number,
   object,
   optional,
   picklist,
@@ -12,8 +16,7 @@ import {
   regex,
   string,
 } from 'valibot'
-import { ForbiddenError } from '#/lib/errors'
-import { auth } from '#/lib/auth'
+import { requirePermission, type AuthEnvironment } from '#/middleware/authorization'
 import { settingsService } from './settings.service'
 
 const optionalText = (limit: number) => optional(pipe(string(), maxLength(limit)))
@@ -52,18 +55,23 @@ const ConfigurationSchema = object({
   description: optional(pipe(string(), maxLength(1000))),
 })
 
-export const settingsRoutes = new Hono()
+const InvoiceNumberingSchema = object({
+  normalPrefix: pipe(string(), minLength(1), maxLength(50)),
+  normalCurrentNumber: pipe(number(), integer(), minValue(0), maxValue(999_999_999)),
+  gstPrefix: pipe(string(), minLength(1), maxLength(50)),
+  gstCurrentNumber: pipe(number(), integer(), minValue(0), maxValue(999_999_999)),
+  paddingDigits: pipe(number(), integer(), minValue(1), maxValue(10)),
+})
+
+const WhatsAppSettingsSchema = object({
+  apiUrl: pipe(string(), maxLength(500)),
+  apiKey: pipe(string(), maxLength(1000)),
+  sessionId: pipe(string(), maxLength(200)),
+})
+
+export const settingsRoutes = new Hono<AuthEnvironment>()
   .use('*', bodyLimit({ maxSize: 4 * 1024 * 1024 }))
-  .use('*', async (c, next) => {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers })
-    if (!session) {
-      return c.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, 401)
-    }
-    if (session.user.role !== 'super_admin') {
-      throw new ForbiddenError('Super admin access is required')
-    }
-    await next()
-  })
+  .use('*', requirePermission('system:manage'))
   .get('/profile', async (c) => {
     const profile = await settingsService.getProfile()
     return c.json({ data: profile })
@@ -71,6 +79,22 @@ export const settingsRoutes = new Hono()
   .put('/profile', vValidator('json', UpdateProfileSchema), async (c) => {
     const profile = await settingsService.updateProfile(c.req.valid('json'))
     return c.json({ data: profile, message: 'Company profile updated' })
+  })
+  .get('/invoice-numbering', async (c) => {
+    const settings = await settingsService.getInvoiceNumbering()
+    return c.json({ data: settings })
+  })
+  .put('/invoice-numbering', vValidator('json', InvoiceNumberingSchema), async (c) => {
+    const settings = await settingsService.updateInvoiceNumbering(c.req.valid('json'))
+    return c.json({ data: settings, message: 'Invoice numbering settings saved' })
+  })
+  .get('/whatsapp', async (c) => {
+    const settings = await settingsService.getWhatsAppSettings()
+    return c.json({ data: settings })
+  })
+  .put('/whatsapp', vValidator('json', WhatsAppSettingsSchema), async (c) => {
+    const settings = await settingsService.updateWhatsAppSettings(c.req.valid('json'))
+    return c.json({ data: settings, message: 'WhatsApp settings saved' })
   })
   .get('/system-configurations', async (c) => {
     const configurations = await settingsService.listConfigurations()

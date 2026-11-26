@@ -184,7 +184,7 @@ export function UpiQrPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" /> Dynamic UPI QR Generator
+              <QrCode className="size-5" /> Dynamic UPI QR Generator
             </CardTitle>
             <CardDescription>Choose an account and optionally set a fixed payment amount.</CardDescription>
           </CardHeader>
@@ -235,7 +235,7 @@ export function UpiQrPage() {
                     onClick={() => setAmount('')}
                     disabled={!amount}
                   >
-                    <X className="h-4 w-4" />
+                    <X className="size-4" />
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">Leave blank for an open-amount QR.</p>
@@ -249,7 +249,7 @@ export function UpiQrPage() {
             )}
 
             <div className="flex flex-col items-center gap-4 rounded-xl border bg-muted/20 p-5 text-center">
-              <div className="flex min-h-64 w-full max-w-sm flex-col items-center justify-center gap-4 rounded-lg bg-card p-5 shadow-sm">
+              <div className="flex min-h-64 w-full max-w-sm flex-col items-center justify-center gap-4 rounded-lg bg-card p-5 shadow-xs">
                 {upiLink && selectedProfile ? (
                   <>
                     <QRCodeCanvas
@@ -270,7 +270,7 @@ export function UpiQrPage() {
                   </>
                 ) : (
                   <div className="flex flex-col gap-2 text-muted-foreground">
-                    <QrCode className="mx-auto h-10 w-10 opacity-50" />
+                    <QrCode className="mx-auto size-10 opacity-50" />
                     <p className="text-sm">
                       {profiles.length === 0 ? 'Add a UPI account to generate a QR code.' : 'Select a UPI account to generate a QR code.'}
                     </p>
@@ -279,10 +279,10 @@ export function UpiQrPage() {
               </div>
               <div className="flex flex-wrap justify-center gap-2">
                 <Button onClick={downloadQr} disabled={!upiLink}>
-                  <Download className="mr-2 h-4 w-4" /> Download QR (PNG)
+                  <Download className="mr-2 size-4" /> Download QR (PNG)
                 </Button>
                 <Button variant="outline" onClick={copyUpiLink} disabled={!upiLink}>
-                  {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                  {copied ? <Check className="mr-2 size-4" /> : <Copy className="mr-2 size-4" />}
                   {copied ? 'Copied' : 'Copy UPI Link'}
                 </Button>
               </div>
@@ -297,7 +297,7 @@ export function UpiQrPage() {
               <CardDescription>Manage the accounts available to the QR generator.</CardDescription>
             </div>
             <Button onClick={openCreateDialog} className="shrink-0">
-              <Plus className="mr-2 h-4 w-4" /> Add New UPI
+              <Plus className="mr-2 size-4" /> Add New UPI
             </Button>
           </CardHeader>
           <CardContent>
@@ -347,7 +347,7 @@ export function UpiQrPage() {
                               title="Edit UPI profile"
                               onClick={() => openEditDialog(profile)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="size-4" />
                             </Button>
                             <Button
                               variant="ghost"
@@ -360,7 +360,7 @@ export function UpiQrPage() {
                                 setProfileToDelete(profile)
                               }}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="size-4" />
                             </Button>
                           </div>
                         </TableCell>

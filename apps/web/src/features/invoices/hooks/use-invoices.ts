@@ -1,11 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { InvoiceNumberScope, InvoiceNumberSettings } from '@jg-app/shared'
 import { client } from '@/lib/api'
 
-export function useInvoices() {
+export function useInvoices(type?: InvoiceNumberScope) {
   return useQuery({
-    queryKey: ['invoices'],
+    queryKey: ['invoices', type ?? 'all'],
     queryFn: () =>
-      (client.api.invoices.$get() as Promise<Response>).then((r) => r.json()) as Promise<{ data: any[] }>,
+      (client.api.invoices.$get({ query: type ? { type } : {} }) as Promise<Response>)
+        .then((r) => r.json()) as Promise<{ data: any[] }>,
+  })
+}
+
+export function useInvoiceNumbering() {
+  return useQuery({
+    queryKey: ['invoices', 'numbering'],
+    queryFn: () =>
+      (client.api.invoices.numbering.$get() as Promise<Response>)
+        .then((r) => r.json()) as Promise<{ data: InvoiceNumberSettings }>,
   })
 }
 
@@ -27,7 +38,10 @@ export function useCreateInvoice() {
       if (!res.ok) throw new Error((json as any)?.error?.message || (json as any)?.message || 'Failed to create invoice')
       return json
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['invoices'] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['invoices'] })
+      void qc.invalidateQueries({ queryKey: ['invoices', 'numbering'] })
+    },
   })
 }
 

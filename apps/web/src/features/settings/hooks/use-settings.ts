@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { InvoiceNumberSettings } from '@jg-app/shared'
 import { client } from '@/lib/api'
+
+export type InvoiceNumberingSettings = InvoiceNumberSettings
+export type WhatsAppSettings = import('@jg-app/shared').WhatsAppSettings
 
 export type CompanyProfile = {
   id: number
@@ -79,6 +83,53 @@ export function useUpdateCompanyProfile() {
         await client.api.settings.profile.$put({ json: data }),
       ),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings', 'profile'] }),
+  })
+}
+
+export const INVOICE_NUMBERING_QUERY_KEY = ['settings', 'invoice-numbering']
+
+export function useInvoiceNumberingSettings() {
+  return useQuery({
+    queryKey: INVOICE_NUMBERING_QUERY_KEY,
+    queryFn: async () => parseResponse<DataResponse<InvoiceNumberingSettings>>(
+      await client.api.settings['invoice-numbering'].$get(),
+    ),
+  })
+}
+
+export function useUpdateInvoiceNumbering() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: InvoiceNumberingSettings) =>
+      parseResponse<DataResponse<InvoiceNumberingSettings>>(
+        await client.api.settings['invoice-numbering'].$put({ json: data }),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: INVOICE_NUMBERING_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: ['invoices', 'numbering'] })
+    },
+  })
+}
+
+export const WHATSAPP_SETTINGS_QUERY_KEY = ['settings', 'whatsapp']
+
+export function useWhatsAppSettings() {
+  return useQuery({
+    queryKey: WHATSAPP_SETTINGS_QUERY_KEY,
+    queryFn: async () => parseResponse<DataResponse<WhatsAppSettings>>(
+      await client.api.settings.whatsapp.$get(),
+    ),
+  })
+}
+
+export function useUpdateWhatsAppSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: WhatsAppSettings) =>
+      parseResponse<DataResponse<WhatsAppSettings>>(
+        await client.api.settings.whatsapp.$put({ json: data }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: WHATSAPP_SETTINGS_QUERY_KEY }),
   })
 }
 

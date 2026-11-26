@@ -37,14 +37,14 @@ export function DataTableFacetedFilter<TData, TValue>({
             selectedValues?.size > 0 && 'border-primary/30 bg-primary/5 text-primary',
           )}
         >
-          <PlusCircle className="h-3.5 w-3.5" />
+          <PlusCircle className="size-3.5" />
           {title}
           {selectedValues?.size > 0 && (
             <>
               <span className="mx-0.5 h-3.5 w-px bg-border" />
               <Badge
                 variant="secondary"
-                className="rounded-sm px-1 font-normal text-[10px] leading-none"
+                className="rounded-sm px-1 font-normal text-xs leading-none"
               >
                 {selectedValues.size}
               </Badge>
@@ -76,15 +76,15 @@ export function DataTableFacetedFilter<TData, TValue>({
             >
               <div
                 className={cn(
-                  'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border',
+                  'mr-2 flex size-4 items-center justify-center rounded-sm border',
                   isSelected
                     ? 'border-primary bg-primary text-primary-foreground'
                     : 'border-muted-foreground/30',
                 )}
               >
-                {isSelected && <Check className="h-3 w-3" />}
+                {isSelected && <Check className="size-3" />}
               </div>
-              {option.icon && <option.icon className="mr-2 h-3.5 w-3.5 text-muted-foreground" />}
+              {option.icon && <option.icon className="mr-2 size-3.5 text-muted-foreground" />}
               <span>{option.label}</span>
             </DropdownMenuItem>
           )

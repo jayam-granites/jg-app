@@ -11,7 +11,6 @@ import {
   Ruler,
   Truck,
   Building2,
-  ChevronDown,
   X,
   HandCoins,
   ListChecks,
@@ -20,188 +19,149 @@ import {
   QrCode,
   Search,
   Settings,
+  ContactRound,
+  BarChart3,
+  TrendingUp,
+  Trophy,
+  Flame,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 import { useSidebar } from './sidebar-provider'
-import { useState } from 'react'
-import { authClient } from '@/lib/api'
-import { hasMinimumRole, isAppRole, type AppRole } from '@jg-app/shared'
+import type { Permission } from '@jg-app/shared'
+import { formatRoleLabel } from '@/lib/auth'
+import { useAuth } from '@/providers/auth'
 
 type NavItem = {
   label: string
-  to?: string
+  to: string
   icon: React.ComponentType<{ className?: string }>
-  children?: NavItem[]
-  minRole?: AppRole
+  permission?: Permission
 }
 
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: 'Main',
     items: [
-      { label: 'Dashboard', to: '/', icon: LayoutDashboard },
-      { label: 'Tasks & Follow-ups', to: '/tasks', icon: CalendarClock },
+      { label: 'Dashboard', to: '/', icon: LayoutDashboard, permission: 'reports:read' },
     ],
   },
   {
-    label: 'Inventory',
+    label: 'CRM & Follow-ups',
     items: [
-      { label: 'Products', to: '/products', icon: Package },
-      { label: 'Price Search', to: '/price-search', icon: Search },
-      { label: 'Categories', to: '/categories', icon: Tags },
-      { label: 'Attributes', to: '/attributes', icon: ListChecks },
-      { label: 'Units', to: '/units', icon: Ruler },
-      { label: 'Stock', to: '/inventory', icon: Warehouse },
-    ],
-  },
-  {
-    label: 'Purchase',
-    items: [
-      { label: 'Purchase Orders', to: '/purchase/orders', icon: ClipboardList },
-      { label: 'Purchase Receipts', to: '/purchase/receipts', icon: Receipt },
+      { label: 'Tasks & Follow-ups', to: '/tasks', icon: CalendarClock, permission: 'enquiries:read' },
+      { label: 'CRM Directory', to: '/crm', icon: ContactRound, permission: 'enquiries:read' },
+      { label: 'Enquiries', to: '/enquiries', icon: ClipboardList, permission: 'enquiries:read' },
+      { label: 'Trade Contacts', to: '/resources', icon: Users, permission: 'enquiries:read' },
     ],
   },
   {
     label: 'Sales',
     items: [
-      { label: 'Invoices', to: '/invoices', icon: Receipt },
-      { label: 'UPI QR Codes', to: '/qr-codes', icon: QrCode },
-      { label: 'Customers', to: '/customers', icon: Users },
-      { label: 'Enquiries', to: '/enquiries', icon: ClipboardList },
-      { label: 'Measurements', to: '/measurements', icon: Ruler },
+      { label: 'Measurements', to: '/measurements', icon: Ruler, permission: 'billing:read' },
+      { label: 'Invoices', to: '/invoices', icon: Receipt, permission: 'billing:read' },
+      { label: 'Customers', to: '/customers', icon: Users, permission: 'billing:read' },
+      { label: 'UPI QR Codes', to: '/qr-codes', icon: QrCode, permission: 'billing:read' },
     ],
   },
   {
-    label: 'Expenses',
+    label: 'Reports',
     items: [
-      { label: 'Expenses', to: '/expenses', icon: Wallet },
-      { label: 'Schedules', to: '/expense-schedules', icon: CalendarClock },
-      { label: 'Accounts', to: '/accounts', icon: CreditCard },
+      { label: 'Sales Summary', to: '/reports/sales', icon: BarChart3, permission: 'reports:read' },
+      { label: 'Daily Margin & Profit %', to: '/reports/daily-margin', icon: TrendingUp, permission: 'reports:read' },
+      { label: 'Top 10 High-Margin Sales', to: '/reports/top-margin', icon: Trophy, permission: 'reports:read' },
+      { label: 'Top 10 High-Frequency Sales', to: '/reports/top-frequency', icon: Flame, permission: 'reports:read' },
+      { label: 'Sales & Profit Overview', to: '/reports/overview', icon: LayoutDashboard, permission: 'reports:read' },
     ],
   },
   {
-    label: 'Masters',
+    label: 'Inventory',
     items: [
-      { label: 'Suppliers', to: '/suppliers', icon: Building2 },
-      { label: 'Brokers', to: '/brokers', icon: HandCoins },
-      { label: 'Transport', to: '/transport', icon: Truck },
-      { label: 'Workforce & Resources', to: '/resources', icon: Users },
+      { label: 'Products', to: '/products', icon: Package, permission: 'catalog:read' },
+      { label: 'Price Search', to: '/price-search', icon: Search, permission: 'cost_control:read' },
+      { label: 'Categories', to: '/categories', icon: Tags, permission: 'catalog:read' },
+      { label: 'Attributes', to: '/attributes', icon: ListChecks, permission: 'catalog:read' },
+      { label: 'Units', to: '/units', icon: Ruler, permission: 'catalog:read' },
+      { label: 'Stock', to: '/inventory', icon: Warehouse, permission: 'cost_control:read' },
+    ],
+  },
+  {
+    label: 'Purchase',
+    items: [
+      { label: 'Purchase Orders', to: '/purchase/orders', icon: ClipboardList, permission: 'cost_control:read' },
+      { label: 'Purchase Receipts', to: '/purchase/receipts', icon: Receipt, permission: 'cost_control:read' },
+      { label: 'Suppliers', to: '/suppliers', icon: Building2, permission: 'cost_control:read' },
+      { label: 'Brokers', to: '/brokers', icon: HandCoins, permission: 'billing:read' },
+      { label: 'Transport', to: '/transport', icon: Truck, permission: 'billing:read' },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { label: 'Expenses', to: '/expenses', icon: Wallet, permission: 'cost_control:read' },
+      { label: 'Schedules', to: '/expense-schedules', icon: CalendarClock, permission: 'cost_control:read' },
+      { label: 'Accounts', to: '/accounts', icon: CreditCard, permission: 'cost_control:read' },
     ],
   },
   {
     label: 'Settings',
     items: [
-      { label: 'Users', to: '/users', icon: Users, minRole: 'admin' },
-      { label: 'Profile Settings', to: '/settings', icon: Settings, minRole: 'super_admin' },
+      { label: 'Users', to: '/users', icon: Users, permission: 'users:manage' },
+      { label: 'Profile Settings', to: '/settings', icon: Settings, permission: 'system:manage' },
     ],
   },
 ]
 
 function NavItemLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
   const { pathname } = useLocation()
-  const isActive = item.to ? pathname === item.to : false
+  const isActive = pathname === item.to
 
   if (collapsed) {
     return (
       <Link
-        to={item.to!}
+        to={item.to}
         className={cn(
-          'flex items-center justify-center rounded-lg p-2 transition-colors',
+          'flex items-center justify-center rounded-lg p-2 font-medium transition-colors duration-150 ease-out',
           isActive
-            ? 'bg-primary text-primary-foreground'
-            : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+            ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
         )}
         title={item.label}
       >
-        <item.icon className="h-5 w-5" />
+        <item.icon className="size-5" />
       </Link>
     )
   }
 
   return (
     <Link
-      to={item.to!}
+      to={item.to}
       className={cn(
-        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ease-out',
         isActive
-          ? 'bg-primary text-primary-foreground'
-          : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
+          ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
       )}
     >
-      <item.icon className="h-4 w-4 shrink-0" />
+      <item.icon className="size-4 shrink-0" />
       {item.label}
     </Link>
-  )
-}
-
-function NavGroupCollapsible({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
-  const { pathname } = useLocation()
-  const isParentActive = item.children?.some((c) => c.to && pathname === c.to)
-  const [open, setOpen] = useState(isParentActive ?? false)
-
-  if (collapsed) {
-    return (
-      <div className="space-y-1">
-        {item.children?.map((child) => (
-          <NavItemLink key={child.to} item={child} collapsed={true} />
-        ))}
-      </div>
-    )
-  }
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger
-        className={cn(
-          'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
-          isParentActive
-            ? 'bg-primary text-primary-foreground'
-            : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-        )}
-      >
-        <item.icon className="h-4 w-4 shrink-0" />
-        <span className="flex-1 text-left">{item.label}</span>
-        <ChevronDown
-          className={cn('h-4 w-4 transition-transform', open && 'rotate-180')}
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-1 pt-1">
-        {item.children?.map((child) => (
-          <Link
-            key={child.to}
-            to={child.to!}
-            className={cn(
-              'flex items-center gap-3 rounded-lg py-2 pl-9 pr-3 text-sm transition-colors',
-              pathname === child.to
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground',
-            )}
-          >
-            <child.icon className="h-4 w-4 shrink-0" />
-            {child.label}
-          </Link>
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
   )
 }
 
 export function AppSidebar() {
   const { open, mobileOpen, setMobileOpen } = useSidebar()
   const collapsed = !open
-  const { data: session } = authClient.useSession()
-  const role = session?.user.role
+  const { user, hasPermission } = useAuth()
+
+  const isVisible = (item: NavItem): boolean =>
+    !item.permission || hasPermission(item.permission)
+
   const visibleNavGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => {
-        const requiredRole = item.minRole
-        if (!requiredRole) return true
-        return isAppRole(role) && hasMinimumRole(role, requiredRole)
-      }),
+      items: group.items.filter(isVisible),
     }))
     .filter((group) => group.items.length > 0)
 
@@ -209,36 +169,37 @@ export function AppSidebar() {
     <div className={cn('flex h-full flex-col', collapsed && 'items-center')}>
       <div className={cn('flex h-14 items-center border-b border-sidebar-border px-4', collapsed && 'justify-center px-2')}>
         {collapsed ? (
-          <span className="text-lg font-bold">JG</span>
+          <span className="text-lg font-semibold">JG</span>
         ) : (
-          <span className="text-lg font-semibold">JG App</span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-lg font-semibold leading-none">JG App</span>
+            {user && (
+              <span className="text-[11px] text-sidebar-muted-foreground">
+                Signed in as {formatRoleLabel(user.role)}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
-      <ScrollArea className="flex-1 px-2 py-4">
-        <nav className={cn('space-y-4', collapsed && 'space-y-2')}>
+      <ScrollArea className="min-h-0 flex-1 px-2 py-4">
+        <nav className={cn('flex flex-col gap-4', collapsed && 'gap-2')}>
           {visibleNavGroups.map((group) => (
             <div key={group.label}>
               {!collapsed && (
-                    <p className="mb-1 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                <p className="mb-1 px-3 text-xs font-medium uppercase tracking-wider text-sidebar-muted-foreground">
                   {group.label}
                 </p>
               )}
-              <div className={cn('space-y-1', collapsed && 'space-y-2')}>
-                {group.items.map((item) =>
-                  item.children ? (
-                    <NavGroupCollapsible key={item.label} item={item} collapsed={collapsed} />
-                  ) : item.to ? (
-                    <NavItemLink key={item.to} item={item} collapsed={collapsed} />
-                  ) : null,
-                )}
+              <div className={cn('flex flex-col gap-1', collapsed && 'gap-2')}>
+                {group.items.map((item) => (
+                  <NavItemLink key={item.to} item={item} collapsed={collapsed} />
+                ))}
               </div>
             </div>
           ))}
         </nav>
       </ScrollArea>
-
-
     </div>
   )
 
@@ -247,7 +208,7 @@ export function AppSidebar() {
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 lg:block',
+          'hidden h-full border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 lg:block',
           collapsed ? 'w-16' : 'w-64',
         )}
       >
@@ -257,29 +218,32 @@ export function AppSidebar() {
       {/* Mobile sidebar (sheet/drawer) */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="fixed inset-y-0 left-0 z-50 w-72 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
+          <div className="fixed inset-0 bg-overlay" onClick={() => setMobileOpen(false)} />
+          <aside className="fixed inset-y-0 left-0 z-50 w-72 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-lg">
             <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
-              <span className="text-lg font-semibold">JG App</span>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-lg font-semibold leading-none">JG App</span>
+                {user && (
+                  <span className="text-[11px] text-sidebar-muted-foreground">
+                    Signed in as {formatRoleLabel(user.role)}
+                  </span>
+                )}
+              </div>
               <Button variant="ghost" size="icon" onClick={() => setMobileOpen(false)}>
-                <X className="h-4 w-4" />
+                <X className="size-4" data-icon="inline-start" />
               </Button>
             </div>
             <ScrollArea className="h-[calc(100vh-3.5rem)] px-2 py-4">
-              <nav className="space-y-4">
+              <nav className="flex flex-col gap-4">
                 {visibleNavGroups.map((group) => (
                   <div key={group.label}>
-                <p className="mb-1 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                    <p className="mb-1 px-3 text-xs font-medium uppercase tracking-wider text-sidebar-muted-foreground">
                       {group.label}
                     </p>
-                    <div className="space-y-1">
-                      {group.items.map((item) =>
-                        item.children ? (
-                          <NavGroupCollapsible key={item.label} item={item} collapsed={false} />
-                        ) : item.to ? (
-                          <NavItemLink key={item.to} item={item} collapsed={false} />
-                        ) : null,
-                      )}
+                    <div className="flex flex-col gap-1">
+                      {group.items.map((item) => (
+                        <NavItemLink key={item.to} item={item} collapsed={false} />
+                      ))}
                     </div>
                   </div>
                 ))}

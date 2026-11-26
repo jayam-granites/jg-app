@@ -13,7 +13,7 @@ import { usePurchaseOrders } from '@/features/purchase-orders/hooks/use-purchase
 import { useCategories } from '@/features/masters/hooks/use-masters'
 import { useAppSettings, useLookupOptions } from '@/features/masters/hooks/use-lookups'
 import { calculateReceiptBilling, LOOKUP_GROUPS, SETTINGS_KEYS, type GstCalculationMode } from '@jg-app/shared'
-import { formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
 
 type SlabEntry = {
   id: string
@@ -476,10 +476,10 @@ export function CreatePurchaseReceiptPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/receipts' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Create Purchase Receipt</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Create Purchase Receipt</h1>
           <p className="text-sm text-muted-foreground">Record goods received from supplier</p>
         </div>
       </div>
@@ -734,10 +734,10 @@ export function CreatePurchaseReceiptPage() {
                                     </td>
                                     <td className="px-3 py-1 text-right">
                                       <div className="flex justify-end gap-1">
-                                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Clone slab" onClick={() => duplicateSlab(orderItem.id, slab.id)}>
+                                        <Button type="button" variant="ghost" size="icon" className="size-8" title="Clone slab" onClick={() => duplicateSlab(orderItem.id, slab.id)}>
                                           <Copy />
                                         </Button>
-                                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" title="Remove slab" onClick={() => updateProductDraft(orderItem.id, (current) => ({ ...current, slabs: current.slabs.filter((entry) => entry.id !== slab.id), error: '' }))}>
+                                        <Button type="button" variant="ghost" size="icon" className="size-8" title="Remove slab" onClick={() => updateProductDraft(orderItem.id, (current) => ({ ...current, slabs: current.slabs.filter((entry) => entry.id !== slab.id), error: '' }))}>
                                           <Trash2 className="text-destructive" />
                                         </Button>
                                       </div>
@@ -980,7 +980,7 @@ export function CreatePurchaseReceiptPage() {
               </div>
               <div className="flex items-end">
                 <Button type="button" variant="outline" size="sm" onClick={handleAddExpense} disabled={!expCategoryId || !expAmount}>
-                  <Plus className="mr-1 h-3 w-3" /> Add
+                  <Plus className="mr-1 size-3" /> Add
                 </Button>
               </div>
             </div>
@@ -1005,13 +1005,13 @@ export function CreatePurchaseReceiptPage() {
                     <tr key={index} className="border-b last:border-0">
                       <td className="px-4 py-2">{exp.categoryName}</td>
                       <td className="px-4 py-2 text-right font-medium">₹{exp.amount.toLocaleString()}</td>
-                      <td className="px-4 py-2">{formatDateTime(exp.expenseDate)}</td>
+                      <td className="px-4 py-2">{formatDate(exp.expenseDate)}</td>
                       <td className="px-4 py-2">{exp.paymentMode || '-'}</td>
                       <td className="px-4 py-2 text-sm text-muted-foreground">{exp.referenceNumber || '-'}</td>
                       <td className="px-4 py-2 text-sm text-muted-foreground">{exp.remarks || '-'}</td>
                       <td className="px-4 py-2 text-right">
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveExpense(index)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
+                        <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => handleRemoveExpense(index)}>
+                          <Trash2 className="size-3 text-destructive" />
                         </Button>
                       </td>
                     </tr>
@@ -1071,7 +1071,7 @@ export function CreatePurchaseReceiptPage() {
           </Button>
           <Button type="submit" disabled={!purchaseOrderId || items.length === 0 || createReceipt.isPending} className="font-semibold">
             {createReceipt.isPending ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</>
+              <><Loader2 className="mr-2 size-4 animate-spin" /> Creating...</>
             ) : (
               'Create Receipt'
             )}

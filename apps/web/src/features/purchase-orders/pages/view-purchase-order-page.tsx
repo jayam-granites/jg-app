@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, Plus } from 'lucide-react'
+import { ArrowLeft, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePurchaseOrder } from '../hooks/use-purchase-orders'
 import { useLookupOptions, lookupOptionMap, optionColorClasses } from '@/features/masters/hooks/use-lookups'
 import { LOOKUP_GROUPS } from '@jg-app/shared'
-import { formatDate, formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
+import { PageLoading } from '@/shared/components/page-loading'
 
 export function ViewPurchaseOrderPage() {
   const { id } = useParams({ from: '/purchase/orders/$id' })
@@ -20,19 +21,13 @@ export function ViewPurchaseOrderPage() {
     [statusOptionsRes],
   )
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!po) {
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/orders' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <p className="text-muted-foreground">Purchase order not found.</p>
       </div>
@@ -49,17 +44,17 @@ export function ViewPurchaseOrderPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/orders' })}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight">{po.poNumber}</h1>
-              <Badge variant="outline" className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${optionColorClasses(statusMap.get(po.status))}`}>
+              <h1 className="text-2xl font-semibold tracking-tight">{po.poNumber}</h1>
+              <Badge variant="outline" className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${optionColorClasses(statusMap.get(po.status))}`}>
                 {statusMap.get(po.status)?.label ?? po.status.replace('_', ' ')}
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              Created {formatDateTime(po.createdAt)}
+              Created {formatDate(po.createdAt)}
             </p>
           </div>
         </div>

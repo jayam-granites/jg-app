@@ -1,4 +1,4 @@
-import { array, minLength, number, object, optional, pipe, string, boolean } from 'valibot'
+import { array, boolean, minLength, number, object, optional, picklist, pipe, string } from 'valibot'
 
 export const InvoiceItemSchema = object({
   itemType: optional(string()),
@@ -42,6 +42,8 @@ export const CreateInvoiceSchema = object({
   customerId: number('Customer is required'),
   invoiceDate: optional(string()),
   dueDate: optional(string()),
+  invoiceType: optional(picklist(['normal', 'gst'])),
+  gstNumber: optional(string()),
   isGst: optional(boolean()),
   isHalfGst: optional(boolean()),
   isTaxInclusive: optional(boolean()),
@@ -79,6 +81,8 @@ export type CreateInvoiceFormData = {
   customerId: number
   invoiceDate?: string
   dueDate?: string
+  invoiceType?: 'normal' | 'gst'
+  gstNumber?: string
   isGst?: boolean
   isHalfGst?: boolean
   isTaxInclusive?: boolean
@@ -115,6 +119,8 @@ export type CreateInvoiceFormData = {
 export const UpdateInvoiceSchema = object({
   status: optional(string()),
   dueDate: optional(string()),
+  invoiceType: optional(picklist(['normal', 'gst'])),
+  gstNumber: optional(string()),
   isGst: optional(boolean()),
   isHalfGst: optional(boolean()),
   isTaxInclusive: optional(boolean()),

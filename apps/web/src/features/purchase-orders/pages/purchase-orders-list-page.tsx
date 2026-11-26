@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { usePurchaseOrders } from '../hooks/use-purchase-orders'
 import { useLookupOptions, lookupOptionMap, optionColorClasses } from '@/features/masters/hooks/use-lookups'
 import { LOOKUP_GROUPS } from '@jg-app/shared'
-import { formatDate, formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
 
 type PurchaseOrderRow = {
   id: number
@@ -73,7 +73,7 @@ export function PurchaseOrdersListPage() {
         accessorKey: 'orderDate',
         header: 'Order Date',
         cell: ({ getValue }) => (
-          <span className="text-sm text-muted-foreground">{formatDateTime(getValue() as string)}</span>
+          <span className="text-sm text-muted-foreground">{formatDate(getValue() as string)}</span>
         ),
       },
       {
@@ -108,7 +108,7 @@ export function PurchaseOrdersListPage() {
           const status = getValue() as string
           const opt = statusMap.get(status)
           return (
-            <Badge variant="outline" className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${optionColorClasses(opt)}`}>
+            <Badge variant="outline" className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${optionColorClasses(opt)}`}>
               {opt?.label ?? status.replace('_', ' ')}
             </Badge>
           )
@@ -124,8 +124,8 @@ export function PurchaseOrdersListPage() {
       title="Purchase Orders"
       description="Manage purchase orders to suppliers"
       action={
-        <Button onClick={() => navigate({ to: '/purchase/orders/create' })} className="rounded-lg shadow-sm">
-          <Plus className="mr-2 h-4 w-4" /> Create PO
+        <Button onClick={() => navigate({ to: '/purchase/orders/create' })} className="rounded-lg shadow-xs">
+          <Plus className="mr-2 size-4" /> Create PO
         </Button>
       }
     >

@@ -90,7 +90,7 @@ export function CreateCustomerPage() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate({ to: '/customers' })}>Cancel</Button>
             <Button onClick={handleSave} disabled={!name.trim() || saving}>
-              <Save className="mr-1.5 h-4 w-4" /> {saving ? 'Saving...' : 'Save Customer'}
+              <Save className="mr-1.5 size-4" /> {saving ? 'Saving...' : 'Save Customer'}
             </Button>
           </div>
         </div>

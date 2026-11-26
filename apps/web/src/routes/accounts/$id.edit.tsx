@@ -59,7 +59,7 @@ function EditAccountPage() {
   return (
     <div className="max-w-2xl space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">Edit Account</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Edit Account</h1>
         <p className="text-sm text-muted-foreground">Update account details</p>
       </div>
       <Card>

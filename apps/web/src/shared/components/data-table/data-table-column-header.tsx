@@ -43,11 +43,11 @@ export function DataTableColumnHeader<TData, TValue>({
     >
       <span>{title}</span>
       {sortDirection === 'asc' ? (
-        <ArrowUp className="ml-1.5 h-3.5 w-3.5 text-primary" />
+        <ArrowUp className="ml-1.5 size-3.5 text-primary" />
       ) : sortDirection === 'desc' ? (
-        <ArrowDown className="ml-1.5 h-3.5 w-3.5 text-primary" />
+        <ArrowDown className="ml-1.5 size-3.5 text-primary" />
       ) : (
-        <ArrowUpDown className="ml-1.5 h-3.5 w-3.5 text-muted-foreground/30" />
+        <ArrowUpDown className="ml-1.5 size-3.5 text-muted-foreground/30" />
       )}
     </Button>
   )

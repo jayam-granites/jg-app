@@ -1,10 +1,7 @@
 import {
   boolean,
   enum_,
-  maxValue,
   minLength,
-  minValue,
-  number,
   object,
   optional,
   pipe,
@@ -12,56 +9,48 @@ import {
 } from 'valibot'
 
 export const EnquiryStatusEnum = enum_({
-  NEW: 'NEW',
-  QUOTED: 'QUOTED',
-  NEGOTIATING: 'NEGOTIATING',
-  WON: 'WON',
-  LOST: 'LOST',
+  OPEN: 'OPEN',
+  FOLLOW_UP_1: 'FOLLOW_UP_1',
+  FOLLOW_UP_2: 'FOLLOW_UP_2',
+  CLOSED_WON: 'CLOSED_WON',
+  CLOSED_LOST: 'CLOSED_LOST',
 })
 
 const customerName = pipe(string(), minLength(1, 'Customer name is required'))
 const mobile = pipe(string(), minLength(1, 'Mobile number is required'))
-const materialInterest = pipe(string(), minLength(1, 'Material interest is required'))
-const quantity = pipe(number(), minValue(0), maxValue(99_999_999.99))
-const quotedPrice = pipe(number(), minValue(0), maxValue(9_999_999_999.99))
+const requirementsNotes = pipe(
+  string(),
+  minLength(1, 'Requirements notes are required'),
+)
 
 export const CreateCustomerEnquirySchema = object({
   customerName,
   mobile,
-  siteLocation: optional(string()),
-  materialInterest,
-  sizeOrUnit: optional(string()),
-  quantity: optional(quantity),
-  quotedPrice: optional(quotedPrice),
-  notes: optional(string()),
+  requirementsNotes,
   status: optional(EnquiryStatusEnum),
+  closeReason: optional(string()),
   isActive: optional(boolean()),
 })
 
 export const UpdateCustomerEnquirySchema = object({
   customerName: optional(customerName),
   mobile: optional(mobile),
-  siteLocation: optional(string()),
-  materialInterest: optional(materialInterest),
-  sizeOrUnit: optional(string()),
-  quantity: optional(quantity),
-  quotedPrice: optional(quotedPrice),
-  notes: optional(string()),
+  requirementsNotes: optional(requirementsNotes),
   status: optional(EnquiryStatusEnum),
+  closeReason: optional(string()),
   isActive: optional(boolean()),
+  followUpDueDate: optional(string()),
 })
 
 export type CreateCustomerEnquiryFormData = {
   customerName: string
   mobile: string
-  siteLocation?: string
-  materialInterest: string
-  sizeOrUnit?: string
-  quantity?: number
-  quotedPrice?: number
-  notes?: string
-  status?: 'NEW' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST'
+  requirementsNotes: string
+  status?: 'OPEN' | 'FOLLOW_UP_1' | 'FOLLOW_UP_2' | 'CLOSED_WON' | 'CLOSED_LOST'
+  closeReason?: string
   isActive?: boolean
 }
 
-export type UpdateCustomerEnquiryFormData = Partial<CreateCustomerEnquiryFormData>
+export type UpdateCustomerEnquiryFormData = Partial<CreateCustomerEnquiryFormData> & {
+  followUpDueDate?: string
+}

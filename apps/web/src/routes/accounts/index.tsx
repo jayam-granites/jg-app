@@ -57,7 +57,7 @@ function AccountsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">Accounts</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Accounts</h1>
           <p className="text-sm text-muted-foreground">Manage payment accounts and balances</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -66,7 +66,7 @@ function AccountsPage() {
           </Button>
           <Button asChild>
             <Link to="/accounts/create">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-2 size-4" />
               Add Account
             </Link>
           </Button>
@@ -184,7 +184,7 @@ function AccountsPage() {
                 {accounts.map((account: any) => (
                   <tr key={account.id} className="border-b">
                     <td className="p-2 flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
+                      <CreditCard className="size-4" />
                       {account.name}
                     </td>
                     <td className="p-2">{account.type}</td>

@@ -4,6 +4,7 @@ import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft } from 'lucide-react'
+import { formatDate } from '@/lib/date'
 
 export const Route = createFileRoute('/accounts/$id')({
   component: AccountStatementPage,
@@ -11,10 +12,6 @@ export const Route = createFileRoute('/accounts/$id')({
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount)
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleString('en-IN')
 }
 
 function AccountStatementPage() {
@@ -43,11 +40,11 @@ function AccountStatementPage() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/accounts">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="size-4" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold">{account?.name || 'Account Statement'}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{account?.name || 'Account Statement'}</h1>
             <p className="text-sm text-muted-foreground">
               {account?.type} {account?.ownerTag ? `• ${account.ownerTag}` : ''}
             </p>
@@ -68,7 +65,7 @@ function AccountStatementPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="p-2 text-left">Date & Time</th>
+                  <th className="p-2 text-left">Date</th>
                   <th className="p-2 text-left">Transaction Type</th>
                   <th className="p-2 text-left">Reference</th>
                   <th className="p-2 text-left">Note</th>
@@ -86,7 +83,7 @@ function AccountStatementPage() {
                       <td className="p-2">{tx.type.replace('_', ' ')}</td>
                       <td className="p-2">{tx.referenceType || '-'} {tx.referenceId ? `#${tx.referenceId}` : ''}</td>
                       <td className="p-2">{tx.note || '-'}</td>
-                      <td className={`p-2 text-right ${isCredit ? 'text-green-600' : amount < 0 ? 'text-red-600' : ''}`}>
+                      <td className={`p-2 text-right ${isCredit ? 'text-success' : amount < 0 ? 'text-destructive' : ''}`}>
                         {isCredit ? '+' : ''}{formatCurrency(amount)}
                       </td>
                       <td className="p-2 text-right font-medium">{formatCurrency(Number(tx.balanceAfter || 0))}</td>

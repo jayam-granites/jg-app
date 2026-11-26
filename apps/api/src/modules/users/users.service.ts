@@ -1,7 +1,7 @@
 import { userRepository } from './users.repository'
 import { NotFoundError, ConflictError, ForbiddenError } from '#/lib/errors'
 import { prisma } from '#/lib/prisma'
-import { hasMinimumRole, isAppRole, type AppRole, type User, type UserDto } from '@jg-app/shared'
+import { canManageRole, normalizeRole, type AppRole, type User, type UserDto } from '@jg-app/shared'
 import type { Prisma } from '@prisma/client'
 import { auth } from '#/lib/auth'
 
@@ -15,10 +15,11 @@ async function findManagedUser(tx: Prisma.TransactionClient, id: string, caller:
     select: { id: true, role: true },
   })
   if (!user) throw new NotFoundError('User')
-  if (!isAppRole(user.role) || !hasMinimumRole(caller.role, user.role)) {
+  const targetRole = normalizeRole(user.role)
+  if (!targetRole || !canManageRole(caller.role, targetRole)) {
     throw new ForbiddenError('You cannot manage this user')
   }
-  if (user.role === 'super_admin' && caller.role !== 'super_admin') {
+  if (targetRole === 'superadmin' && caller.role !== 'superadmin') {
     throw new ForbiddenError('Only a super admin can manage super admin accounts')
   }
   return user
@@ -43,14 +44,14 @@ export const userService = {
 
   async updateRole(id: string, role: AppRole, caller: UserManager): Promise<void> {
     if (id === caller.id) throw new ForbiddenError('You cannot change your own role')
-    if (!hasMinimumRole(caller.role, role)) {
+    if (!canManageRole(caller.role, role)) {
       throw new ForbiddenError('You cannot assign a role above your own')
     }
 
     await prisma.$transaction(
       async (tx) => {
         const user = await findManagedUser(tx, id, caller)
-        if (user.role === 'super_admin' && role !== 'super_admin') {
+        if (normalizeRole(user.role) === 'superadmin' && role !== 'superadmin') {
           await this.ensureAnotherSuperAdmin(tx, id)
         }
 
@@ -65,7 +66,7 @@ export const userService = {
     await prisma.$transaction(
       async (tx) => {
         const user = await findManagedUser(tx, id, caller)
-        if (user.role === 'super_admin') await this.ensureAnotherSuperAdmin(tx, id)
+        if (normalizeRole(user.role) === 'superadmin') await this.ensureAnotherSuperAdmin(tx, id)
         await tx.user.delete({ where: { id } })
       },
       { isolationLevel: 'Serializable' },
@@ -121,7 +122,7 @@ export const userService = {
 
   async ensureAnotherSuperAdmin(tx: Prisma.TransactionClient, excludedId: string): Promise<void> {
     const remaining = await tx.user.count({
-      where: { role: 'super_admin', id: { not: excludedId } },
+      where: { role: { in: ['superadmin', 'super_admin'] }, id: { not: excludedId } },
     })
     if (remaining === 0) {
       throw new ForbiddenError('The last super admin cannot be demoted or deleted')

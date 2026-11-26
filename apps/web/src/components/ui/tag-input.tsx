@@ -40,26 +40,22 @@ export function TagInput({ value, onChange, placeholder, disabled, error }: TagI
   return (
     <div
       className={cn(
-        'flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm',
-        'focus-within:outline-none focus-within:ring-1 focus-within:ring-ring',
-        error && 'border-destructive',
+        'flex min-h-9 flex-wrap items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-xs transition-all duration-150 ease-out',
+        'focus-within:border-ring focus-within:outline-none focus-within:ring-2 focus-within:ring-ring/25',
+        error && 'border-destructive focus-within:border-destructive focus-within:ring-destructive/25',
         disabled && 'cursor-not-allowed opacity-50',
       )}
     >
       {value.map((tag, i) => (
-        <Badge
-          key={i}
-          variant="secondary"
-          className="gap-1 rounded-sm px-2 py-0.5 text-xs font-normal"
-        >
+        <Badge key={i} variant="secondary" className="gap-1 rounded-full px-2 py-0.5 text-xs font-medium">
           {tag}
           <button
             type="button"
             onClick={() => removeTag(i)}
             disabled={disabled}
-            className="ml-0.5 rounded-sm outline-none hover:text-destructive focus-visible:ring-1 focus-visible:ring-ring"
+            className="ml-0.5 rounded-sm outline-none transition-colors duration-150 hover:text-destructive focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <X className="h-3 w-3" />
+            <X className="size-3" />
           </button>
         </Badge>
       ))}
@@ -75,7 +71,7 @@ export function TagInput({ value, onChange, placeholder, disabled, error }: TagI
         }}
         placeholder={value.length === 0 ? placeholder : ''}
         disabled={disabled}
-        className="min-w-[120px] flex-1 border-0 p-0 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+        className="h-8 min-w-[120px] flex-1 border-0 p-0 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
       />
     </div>
   )

@@ -1,5 +1,7 @@
-import { slabsRepository } from './slabs.repository'
+import { isGraniteCategoryName } from '@jg-app/shared'
 import { ValidationError } from '#/lib/errors'
+import { prisma } from '#/lib/prisma'
+import { slabsRepository } from './slabs.repository'
 
 export const slabsService = {
   async getAll() {
@@ -25,6 +27,18 @@ export const slabsService = {
     if (!data.productId || data.productId <= 0) {
       throw new ValidationError('Product is required')
     }
+
+    const product = await prisma.product.findUnique({
+      where: { id: data.productId },
+      select: { isActive: true, category: { select: { name: true } } },
+    })
+    if (!product || !product.isActive) {
+      throw new ValidationError('Select an active product')
+    }
+    if (!isGraniteCategoryName(product.category?.name)) {
+      throw new ValidationError('Measurements only allow products in the Granites category')
+    }
+
     if (!data.slabNumber || data.slabNumber <= 0) {
       throw new ValidationError('Slab number is required')
     }

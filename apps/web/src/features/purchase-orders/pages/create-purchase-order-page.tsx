@@ -94,10 +94,10 @@ export function CreatePurchaseOrderPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/orders' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Create Purchase Order</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Create Purchase Order</h1>
           <p className="text-sm text-muted-foreground">Create a new purchase order to a supplier</p>
         </div>
       </div>
@@ -170,7 +170,7 @@ export function CreatePurchaseOrderPage() {
             </div>
             <div className="flex items-end">
               <Button type="button" variant="outline" size="sm" onClick={handleAddItem} disabled={!selectedVariant}>
-                <Plus className="mr-1 h-3 w-3" /> Add
+                <Plus className="mr-1 size-3" /> Add
               </Button>
             </div>
           </div>
@@ -199,8 +199,8 @@ export function CreatePurchaseOrderPage() {
                         {item.amount === undefined ? '-' : `₹${item.amount.toLocaleString()}`}
                       </td>
                       <td className="px-4 py-2 text-right">
-                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveItem(index)}>
-                          <Trash2 className="h-3 w-3 text-destructive" />
+                        <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => handleRemoveItem(index)}>
+                          <Trash2 className="size-3 text-destructive" />
                         </Button>
                       </td>
                     </tr>
@@ -226,7 +226,7 @@ export function CreatePurchaseOrderPage() {
           </Button>
           <Button type="submit" disabled={!supplierId || items.length === 0 || createPO.isPending} className="font-semibold">
             {createPO.isPending ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</>
+              <><Loader2 className="mr-2 size-4 animate-spin" /> Creating...</>
             ) : (
               'Create Purchase Order'
             )}

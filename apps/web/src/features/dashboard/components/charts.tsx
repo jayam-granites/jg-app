@@ -88,7 +88,7 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
               x={padding.left - 10}
               y={tick.y + 4}
               textAnchor="end"
-              className="fill-muted-foreground text-[10px]"
+              className="fill-muted-foreground text-xs"
             >
               {formatCompactCurrency(tick.value)}
             </text>
@@ -147,7 +147,7 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
                 x={x(index)}
                 y={height - 14}
                 textAnchor="middle"
-                className="fill-muted-foreground text-[10px]"
+                className="fill-muted-foreground text-xs"
               >
                 {point.label}
               </text>
@@ -187,7 +187,7 @@ export function DonutChart({
       <div className="relative shrink-0">
         <svg
           viewBox={`0 0 ${size} ${size}`}
-          className="h-44 w-44 -rotate-90"
+          className="size-44 -rotate-90"
           role="img"
           aria-label={centerLabel}
         >
@@ -224,7 +224,7 @@ export function DonutChart({
             })}
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {centerLabel}
           </span>
           <span className="text-lg font-bold">{centerValue}</span>
@@ -238,7 +238,7 @@ export function DonutChart({
           <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
             <div className="flex min-w-0 items-center gap-2">
               <span
-                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                className="size-2.5 shrink-0 rounded-full"
                 style={{ backgroundColor: item.color }}
               />
               <span className="truncate text-muted-foreground">{item.label}</span>

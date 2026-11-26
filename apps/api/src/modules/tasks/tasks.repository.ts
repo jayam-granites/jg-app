@@ -1,14 +1,25 @@
+import type { Prisma } from '@prisma/client'
+import type { InferOutput } from 'valibot'
+import { CreateTaskSchema, UpdateTaskSchema } from '@jg-app/validators'
 import { prisma } from '#/lib/prisma'
-import type { CreateTaskFormData, UpdateTaskFormData } from '@jg-app/validators'
+
+type CreateTaskData = InferOutput<typeof CreateTaskSchema>
+type UpdateTaskData = InferOutput<typeof UpdateTaskSchema>
+
+const relationIncludes = {
+  enquiry: { select: { id: true, customerName: true, mobile: true, isActive: true } },
+  resource: { select: { id: true, name: true, mobile: true, isActive: true } },
+  customer: { select: { id: true, name: true, mobile: true, isActive: true } },
+  supplier: { select: { id: true, name: true, mobile: true, isActive: true } },
+  broker: { select: { id: true, name: true, mobile: true, isActive: true } },
+  transport: { select: { id: true, name: true, mobile: true, isActive: true } },
+}
 
 export const tasksRepository = {
   async findAll() {
     return prisma.task.findMany({
       where: { isActive: true },
-      include: {
-        enquiry: { select: { id: true, customerName: true, mobile: true } },
-        resource: { select: { id: true, name: true, mobile: true } },
-      },
+      include: relationIncludes,
       orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }],
     })
   },
@@ -16,10 +27,7 @@ export const tasksRepository = {
   async findById(id: number) {
     return prisma.task.findUnique({
       where: { id },
-      include: {
-        enquiry: { select: { id: true, customerName: true, mobile: true } },
-        resource: { select: { id: true, name: true, mobile: true } },
-      },
+      include: relationIncludes,
     })
   },
 
@@ -30,23 +38,24 @@ export const tasksRepository = {
         status: { in: ['PENDING', 'IN_PROGRESS'] },
         dueDate: { lte: cutoff },
       },
-      include: {
-        enquiry: { select: { customerName: true, mobile: true, isActive: true } },
-        resource: { select: { name: true, mobile: true, isActive: true } },
-      },
+      include: relationIncludes,
       orderBy: [{ dueDate: 'asc' }, { id: 'asc' }],
     })
   },
 
-  async create(data: CreateTaskFormData) {
-    return prisma.task.create({
+  async create(data: CreateTaskData, tx: Prisma.TransactionClient = prisma) {
+    return tx.task.create({
       data: { ...data, dueDate: new Date(data.dueDate) },
     })
   },
 
-  async update(id: number, data: UpdateTaskFormData) {
+  async update(
+    id: number,
+    data: UpdateTaskData,
+    tx: Prisma.TransactionClient = prisma,
+  ) {
     const { dueDate, ...rest } = data
-    return prisma.task.update({
+    return tx.task.update({
       where: { id },
       data: { ...rest, ...(dueDate ? { dueDate: new Date(dueDate) } : {}) },
     })

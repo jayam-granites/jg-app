@@ -16,27 +16,37 @@ import { Route as TasksRouteImport } from './routes/tasks'
 import { Route as SuppliersRouteImport } from './routes/suppliers'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as QrCodesRouteImport } from './routes/qr-codes'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PriceSearchRouteImport } from './routes/price-search'
 import { Route as MeasurementsRouteImport } from './routes/measurements'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InvoicesRouteImport } from './routes/invoices'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as ExpensesRouteImport } from './routes/expenses'
 import { Route as ExpenseSchedulesRouteImport } from './routes/expense-schedules'
 import { Route as EnquiriesRouteImport } from './routes/enquiries'
 import { Route as CustomersRouteImport } from './routes/customers'
+import { Route as CrmRouteImport } from './routes/crm'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as BrokersRouteImport } from './routes/brokers'
 import { Route as AttributesRouteImport } from './routes/attributes'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as MeasurementsIndexRouteImport } from './routes/measurements.index'
 import { Route as InvoicesIndexRouteImport } from './routes/invoices.index'
 import { Route as InventoryIndexRouteImport } from './routes/inventory.index'
 import { Route as CustomersIndexRouteImport } from './routes/customers.index'
 import { Route as AccountsIndexRouteImport } from './routes/accounts/index'
+import { Route as ReportsTopMarginRouteImport } from './routes/reports/top-margin'
+import { Route as ReportsTopFrequencyRouteImport } from './routes/reports/top-frequency'
+import { Route as ReportsSalesRouteImport } from './routes/reports/sales'
+import { Route as ReportsOverviewRouteImport } from './routes/reports/overview'
+import { Route as ReportsDailyMarginRouteImport } from './routes/reports/daily-margin'
 import { Route as ProductsCreateRouteImport } from './routes/products.create'
 import { Route as ProductsIdRouteImport } from './routes/products.$id'
 import { Route as MeasurementsIdRouteImport } from './routes/measurements.$id'
@@ -93,9 +103,19 @@ const ResourcesRoute = ResourcesRouteImport.update({
   path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const QrCodesRoute = QrCodesRouteImport.update({
   id: '/qr-codes',
   path: '/qr-codes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProductsRoute = ProductsRouteImport.update({
@@ -123,6 +143,11 @@ const InvoicesRoute = InvoicesRouteImport.update({
   path: '/invoices',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForbiddenRoute = ForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExpensesRoute = ExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -141,6 +166,11 @@ const EnquiriesRoute = EnquiriesRouteImport.update({
 const CustomersRoute = CustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CrmRoute = CrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesRoute = CategoriesRouteImport.update({
@@ -167,6 +197,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsIndexRoute = ReportsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ReportsRoute,
 } as any)
 const ProductsIndexRoute = ProductsIndexRouteImport.update({
   id: '/',
@@ -197,6 +232,31 @@ const AccountsIndexRoute = AccountsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AccountsRoute,
+} as any)
+const ReportsTopMarginRoute = ReportsTopMarginRouteImport.update({
+  id: '/top-margin',
+  path: '/top-margin',
+  getParentRoute: () => ReportsRoute,
+} as any)
+const ReportsTopFrequencyRoute = ReportsTopFrequencyRouteImport.update({
+  id: '/top-frequency',
+  path: '/top-frequency',
+  getParentRoute: () => ReportsRoute,
+} as any)
+const ReportsSalesRoute = ReportsSalesRouteImport.update({
+  id: '/sales',
+  path: '/sales',
+  getParentRoute: () => ReportsRoute,
+} as any)
+const ReportsOverviewRoute = ReportsOverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
+  getParentRoute: () => ReportsRoute,
+} as any)
+const ReportsDailyMarginRoute = ReportsDailyMarginRouteImport.update({
+  id: '/daily-margin',
+  path: '/daily-margin',
+  getParentRoute: () => ReportsRoute,
 } as any)
 const ProductsCreateRoute = ProductsCreateRouteImport.update({
   id: '/create',
@@ -305,16 +365,20 @@ export interface FileRoutesByFullPath {
   '/attributes': typeof AttributesRoute
   '/brokers': typeof BrokersRoute
   '/categories': typeof CategoriesRoute
+  '/crm': typeof CrmRoute
   '/customers': typeof CustomersRouteWithChildren
   '/enquiries': typeof EnquiriesRoute
   '/expense-schedules': typeof ExpenseSchedulesRoute
   '/expenses': typeof ExpensesRoute
+  '/forbidden': typeof ForbiddenRoute
   '/invoices': typeof InvoicesRouteWithChildren
   '/login': typeof LoginRoute
   '/measurements': typeof MeasurementsRouteWithChildren
   '/price-search': typeof PriceSearchRoute
   '/products': typeof ProductsRouteWithChildren
+  '/profile': typeof ProfileRoute
   '/qr-codes': typeof QrCodesRoute
+  '/reports': typeof ReportsRouteWithChildren
   '/resources': typeof ResourcesRoute
   '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
@@ -332,12 +396,18 @@ export interface FileRoutesByFullPath {
   '/measurements/$id': typeof MeasurementsIdRoute
   '/products/$id': typeof ProductsIdRouteWithChildren
   '/products/create': typeof ProductsCreateRoute
+  '/reports/daily-margin': typeof ReportsDailyMarginRoute
+  '/reports/overview': typeof ReportsOverviewRoute
+  '/reports/sales': typeof ReportsSalesRoute
+  '/reports/top-frequency': typeof ReportsTopFrequencyRoute
+  '/reports/top-margin': typeof ReportsTopMarginRoute
   '/accounts/': typeof AccountsIndexRoute
   '/customers/': typeof CustomersIndexRoute
   '/inventory/': typeof InventoryIndexRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/measurements/': typeof MeasurementsIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/reports/': typeof ReportsIndexRoute
   '/accounts/$id/edit': typeof AccountsIdEditRoute
   '/products/$id/edit': typeof ProductsIdEditRoute
   '/purchase/orders/$id': typeof PurchaseOrdersIdRoute
@@ -354,11 +424,14 @@ export interface FileRoutesByTo {
   '/attributes': typeof AttributesRoute
   '/brokers': typeof BrokersRoute
   '/categories': typeof CategoriesRoute
+  '/crm': typeof CrmRoute
   '/enquiries': typeof EnquiriesRoute
   '/expense-schedules': typeof ExpenseSchedulesRoute
   '/expenses': typeof ExpensesRoute
+  '/forbidden': typeof ForbiddenRoute
   '/login': typeof LoginRoute
   '/price-search': typeof PriceSearchRoute
+  '/profile': typeof ProfileRoute
   '/qr-codes': typeof QrCodesRoute
   '/resources': typeof ResourcesRoute
   '/settings': typeof SettingsRoute
@@ -376,12 +449,18 @@ export interface FileRoutesByTo {
   '/invoices/create': typeof InvoicesCreateRoute
   '/measurements/$id': typeof MeasurementsIdRoute
   '/products/create': typeof ProductsCreateRoute
+  '/reports/daily-margin': typeof ReportsDailyMarginRoute
+  '/reports/overview': typeof ReportsOverviewRoute
+  '/reports/sales': typeof ReportsSalesRoute
+  '/reports/top-frequency': typeof ReportsTopFrequencyRoute
+  '/reports/top-margin': typeof ReportsTopMarginRoute
   '/accounts': typeof AccountsIndexRoute
   '/customers': typeof CustomersIndexRoute
   '/inventory': typeof InventoryIndexRoute
   '/invoices': typeof InvoicesIndexRoute
   '/measurements': typeof MeasurementsIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/reports': typeof ReportsIndexRoute
   '/accounts/$id/edit': typeof AccountsIdEditRoute
   '/products/$id/edit': typeof ProductsIdEditRoute
   '/purchase/orders/$id': typeof PurchaseOrdersIdRoute
@@ -400,16 +479,20 @@ export interface FileRoutesById {
   '/attributes': typeof AttributesRoute
   '/brokers': typeof BrokersRoute
   '/categories': typeof CategoriesRoute
+  '/crm': typeof CrmRoute
   '/customers': typeof CustomersRouteWithChildren
   '/enquiries': typeof EnquiriesRoute
   '/expense-schedules': typeof ExpenseSchedulesRoute
   '/expenses': typeof ExpensesRoute
+  '/forbidden': typeof ForbiddenRoute
   '/invoices': typeof InvoicesRouteWithChildren
   '/login': typeof LoginRoute
   '/measurements': typeof MeasurementsRouteWithChildren
   '/price-search': typeof PriceSearchRoute
   '/products': typeof ProductsRouteWithChildren
+  '/profile': typeof ProfileRoute
   '/qr-codes': typeof QrCodesRoute
+  '/reports': typeof ReportsRouteWithChildren
   '/resources': typeof ResourcesRoute
   '/settings': typeof SettingsRoute
   '/suppliers': typeof SuppliersRoute
@@ -427,12 +510,18 @@ export interface FileRoutesById {
   '/measurements/$id': typeof MeasurementsIdRoute
   '/products/$id': typeof ProductsIdRouteWithChildren
   '/products/create': typeof ProductsCreateRoute
+  '/reports/daily-margin': typeof ReportsDailyMarginRoute
+  '/reports/overview': typeof ReportsOverviewRoute
+  '/reports/sales': typeof ReportsSalesRoute
+  '/reports/top-frequency': typeof ReportsTopFrequencyRoute
+  '/reports/top-margin': typeof ReportsTopMarginRoute
   '/accounts/': typeof AccountsIndexRoute
   '/customers/': typeof CustomersIndexRoute
   '/inventory/': typeof InventoryIndexRoute
   '/invoices/': typeof InvoicesIndexRoute
   '/measurements/': typeof MeasurementsIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/reports/': typeof ReportsIndexRoute
   '/accounts/$id/edit': typeof AccountsIdEditRoute
   '/products/$id/edit': typeof ProductsIdEditRoute
   '/purchase/orders/$id': typeof PurchaseOrdersIdRoute
@@ -452,16 +541,20 @@ export interface FileRouteTypes {
     | '/attributes'
     | '/brokers'
     | '/categories'
+    | '/crm'
     | '/customers'
     | '/enquiries'
     | '/expense-schedules'
     | '/expenses'
+    | '/forbidden'
     | '/invoices'
     | '/login'
     | '/measurements'
     | '/price-search'
     | '/products'
+    | '/profile'
     | '/qr-codes'
+    | '/reports'
     | '/resources'
     | '/settings'
     | '/suppliers'
@@ -479,12 +572,18 @@ export interface FileRouteTypes {
     | '/measurements/$id'
     | '/products/$id'
     | '/products/create'
+    | '/reports/daily-margin'
+    | '/reports/overview'
+    | '/reports/sales'
+    | '/reports/top-frequency'
+    | '/reports/top-margin'
     | '/accounts/'
     | '/customers/'
     | '/inventory/'
     | '/invoices/'
     | '/measurements/'
     | '/products/'
+    | '/reports/'
     | '/accounts/$id/edit'
     | '/products/$id/edit'
     | '/purchase/orders/$id'
@@ -501,11 +600,14 @@ export interface FileRouteTypes {
     | '/attributes'
     | '/brokers'
     | '/categories'
+    | '/crm'
     | '/enquiries'
     | '/expense-schedules'
     | '/expenses'
+    | '/forbidden'
     | '/login'
     | '/price-search'
+    | '/profile'
     | '/qr-codes'
     | '/resources'
     | '/settings'
@@ -523,12 +625,18 @@ export interface FileRouteTypes {
     | '/invoices/create'
     | '/measurements/$id'
     | '/products/create'
+    | '/reports/daily-margin'
+    | '/reports/overview'
+    | '/reports/sales'
+    | '/reports/top-frequency'
+    | '/reports/top-margin'
     | '/accounts'
     | '/customers'
     | '/inventory'
     | '/invoices'
     | '/measurements'
     | '/products'
+    | '/reports'
     | '/accounts/$id/edit'
     | '/products/$id/edit'
     | '/purchase/orders/$id'
@@ -546,16 +654,20 @@ export interface FileRouteTypes {
     | '/attributes'
     | '/brokers'
     | '/categories'
+    | '/crm'
     | '/customers'
     | '/enquiries'
     | '/expense-schedules'
     | '/expenses'
+    | '/forbidden'
     | '/invoices'
     | '/login'
     | '/measurements'
     | '/price-search'
     | '/products'
+    | '/profile'
     | '/qr-codes'
+    | '/reports'
     | '/resources'
     | '/settings'
     | '/suppliers'
@@ -573,12 +685,18 @@ export interface FileRouteTypes {
     | '/measurements/$id'
     | '/products/$id'
     | '/products/create'
+    | '/reports/daily-margin'
+    | '/reports/overview'
+    | '/reports/sales'
+    | '/reports/top-frequency'
+    | '/reports/top-margin'
     | '/accounts/'
     | '/customers/'
     | '/inventory/'
     | '/invoices/'
     | '/measurements/'
     | '/products/'
+    | '/reports/'
     | '/accounts/$id/edit'
     | '/products/$id/edit'
     | '/purchase/orders/$id'
@@ -597,16 +715,20 @@ export interface RootRouteChildren {
   AttributesRoute: typeof AttributesRoute
   BrokersRoute: typeof BrokersRoute
   CategoriesRoute: typeof CategoriesRoute
+  CrmRoute: typeof CrmRoute
   CustomersRoute: typeof CustomersRouteWithChildren
   EnquiriesRoute: typeof EnquiriesRoute
   ExpenseSchedulesRoute: typeof ExpenseSchedulesRoute
   ExpensesRoute: typeof ExpensesRoute
+  ForbiddenRoute: typeof ForbiddenRoute
   InvoicesRoute: typeof InvoicesRouteWithChildren
   LoginRoute: typeof LoginRoute
   MeasurementsRoute: typeof MeasurementsRouteWithChildren
   PriceSearchRoute: typeof PriceSearchRoute
   ProductsRoute: typeof ProductsRouteWithChildren
+  ProfileRoute: typeof ProfileRoute
   QrCodesRoute: typeof QrCodesRoute
+  ReportsRoute: typeof ReportsRouteWithChildren
   ResourcesRoute: typeof ResourcesRoute
   SettingsRoute: typeof SettingsRoute
   SuppliersRoute: typeof SuppliersRoute
@@ -676,11 +798,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/qr-codes': {
       id: '/qr-codes'
       path: '/qr-codes'
       fullPath: '/qr-codes'
       preLoaderRoute: typeof QrCodesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/products': {
@@ -718,6 +854,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvoicesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/expenses': {
       id: '/expenses'
       path: '/expenses'
@@ -744,6 +887,13 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/customers'
       preLoaderRoute: typeof CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/crm': {
+      id: '/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof CrmRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories': {
@@ -780,6 +930,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/reports/': {
+      id: '/reports/'
+      path: '/'
+      fullPath: '/reports/'
+      preLoaderRoute: typeof ReportsIndexRouteImport
+      parentRoute: typeof ReportsRoute
     }
     '/products/': {
       id: '/products/'
@@ -822,6 +979,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/accounts/'
       preLoaderRoute: typeof AccountsIndexRouteImport
       parentRoute: typeof AccountsRoute
+    }
+    '/reports/top-margin': {
+      id: '/reports/top-margin'
+      path: '/top-margin'
+      fullPath: '/reports/top-margin'
+      preLoaderRoute: typeof ReportsTopMarginRouteImport
+      parentRoute: typeof ReportsRoute
+    }
+    '/reports/top-frequency': {
+      id: '/reports/top-frequency'
+      path: '/top-frequency'
+      fullPath: '/reports/top-frequency'
+      preLoaderRoute: typeof ReportsTopFrequencyRouteImport
+      parentRoute: typeof ReportsRoute
+    }
+    '/reports/sales': {
+      id: '/reports/sales'
+      path: '/sales'
+      fullPath: '/reports/sales'
+      preLoaderRoute: typeof ReportsSalesRouteImport
+      parentRoute: typeof ReportsRoute
+    }
+    '/reports/overview': {
+      id: '/reports/overview'
+      path: '/overview'
+      fullPath: '/reports/overview'
+      preLoaderRoute: typeof ReportsOverviewRouteImport
+      parentRoute: typeof ReportsRoute
+    }
+    '/reports/daily-margin': {
+      id: '/reports/daily-margin'
+      path: '/daily-margin'
+      fullPath: '/reports/daily-margin'
+      preLoaderRoute: typeof ReportsDailyMarginRouteImport
+      parentRoute: typeof ReportsRoute
     }
     '/products/create': {
       id: '/products/create'
@@ -1068,6 +1260,27 @@ const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
   ProductsRouteChildren,
 )
 
+interface ReportsRouteChildren {
+  ReportsDailyMarginRoute: typeof ReportsDailyMarginRoute
+  ReportsOverviewRoute: typeof ReportsOverviewRoute
+  ReportsSalesRoute: typeof ReportsSalesRoute
+  ReportsTopFrequencyRoute: typeof ReportsTopFrequencyRoute
+  ReportsTopMarginRoute: typeof ReportsTopMarginRoute
+  ReportsIndexRoute: typeof ReportsIndexRoute
+}
+
+const ReportsRouteChildren: ReportsRouteChildren = {
+  ReportsDailyMarginRoute: ReportsDailyMarginRoute,
+  ReportsOverviewRoute: ReportsOverviewRoute,
+  ReportsSalesRoute: ReportsSalesRoute,
+  ReportsTopFrequencyRoute: ReportsTopFrequencyRoute,
+  ReportsTopMarginRoute: ReportsTopMarginRoute,
+  ReportsIndexRoute: ReportsIndexRoute,
+}
+
+const ReportsRouteWithChildren =
+  ReportsRoute._addFileChildren(ReportsRouteChildren)
+
 interface PurchaseReceiptsIdRouteChildren {
   PurchaseReceiptsIdEditRoute: typeof PurchaseReceiptsIdEditRoute
 }
@@ -1085,16 +1298,20 @@ const rootRouteChildren: RootRouteChildren = {
   AttributesRoute: AttributesRoute,
   BrokersRoute: BrokersRoute,
   CategoriesRoute: CategoriesRoute,
+  CrmRoute: CrmRoute,
   CustomersRoute: CustomersRouteWithChildren,
   EnquiriesRoute: EnquiriesRoute,
   ExpenseSchedulesRoute: ExpenseSchedulesRoute,
   ExpensesRoute: ExpensesRoute,
+  ForbiddenRoute: ForbiddenRoute,
   InvoicesRoute: InvoicesRouteWithChildren,
   LoginRoute: LoginRoute,
   MeasurementsRoute: MeasurementsRouteWithChildren,
   PriceSearchRoute: PriceSearchRoute,
   ProductsRoute: ProductsRouteWithChildren,
+  ProfileRoute: ProfileRoute,
   QrCodesRoute: QrCodesRoute,
+  ReportsRoute: ReportsRouteWithChildren,
   ResourcesRoute: ResourcesRoute,
   SettingsRoute: SettingsRoute,
   SuppliersRoute: SuppliersRoute,

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { usePurchaseReceipt, useUpdatePurchaseReceipt } from '../hooks/use-purchase-receipts'
+import { PageLoading } from '@/shared/components/page-loading'
 
 export function EditPurchaseReceiptPage() {
   const { id } = useParams({ from: '/purchase/receipts/$id/edit' })
@@ -58,19 +59,13 @@ export function EditPurchaseReceiptPage() {
     })
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!receipt) {
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/purchase/receipts' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <p className="text-muted-foreground">Purchase receipt not found.</p>
       </div>
@@ -81,10 +76,10 @@ export function EditPurchaseReceiptPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: `/purchase/receipts/${id}` })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Edit {receipt.receiptNumber}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Edit {receipt.receiptNumber}</h1>
           <p className="text-sm text-muted-foreground">Update receipt header and billing information</p>
         </div>
       </div>
@@ -198,7 +193,7 @@ export function EditPurchaseReceiptPage() {
           </Button>
           <Button type="submit" disabled={updateReceipt.isPending} className="font-semibold">
             {updateReceipt.isPending ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+              <><Loader2 className="mr-2 size-4 animate-spin" /> Saving...</>
             ) : (
               'Save Changes'
             )}

@@ -1,8 +1,8 @@
 import { invoicesRepository } from './invoices.repository'
 import { brokersRepository } from '../brokers/brokers.repository'
+import { settingsService } from '../settings/settings.service'
 import { NotFoundError, ValidationError } from '#/lib/errors'
-import { formatInvoiceNumber, invoiceNumberPrefix, sequenceFromInvoiceNumber } from './invoice-number'
-import { roundInvoiceSqft } from '@jg-app/shared'
+import { type InvoiceNumberScope, roundInvoiceSqft } from '@jg-app/shared'
 
 type InvoiceItemInput = {
   itemType?: string
@@ -40,20 +40,11 @@ function itemAmount(item: InvoiceItemInput): number {
   return round2(item.qty * item.rate - (item.discountAmount ?? 0))
 }
 
-async function nextInvoiceNumber(invoiceDate: Date): Promise<string> {
-  const prefix = invoiceNumberPrefix(invoiceDate)
-  const latest = await invoicesRepository.findLatestInvoiceNumberByPrefix(prefix)
-  const lastSequence = latest ? sequenceFromInvoiceNumber(latest.invoiceNumber, prefix) : 0
-  return formatInvoiceNumber(invoiceDate, lastSequence + 1)
-}
+const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/
 
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === 'P2002'
-  )
+function resolveInvoiceType(data: { invoiceType?: string; isGst?: boolean }): InvoiceNumberScope {
+  if (data.invoiceType === 'normal' || data.invoiceType === 'gst') return data.invoiceType
+  return data.isGst ? 'gst' : 'normal'
 }
 
 function calculateTotals(data: {
@@ -108,8 +99,12 @@ function calculateTotals(data: {
 }
 
 export const invoicesService = {
-  async getAll() {
-    return invoicesRepository.findAll()
+  async getAll(type?: InvoiceNumberScope) {
+    return invoicesRepository.findAll(type)
+  },
+
+  getNumberingSettings() {
+    return settingsService.getInvoiceNumbering()
   },
 
   async getById(id: number) {
@@ -122,6 +117,8 @@ export const invoicesService = {
     customerId: number
     invoiceDate?: string
     dueDate?: string
+    invoiceType?: 'normal' | 'gst'
+    gstNumber?: string
     isGst?: boolean
     isHalfGst?: boolean
     isTaxInclusive?: boolean
@@ -139,6 +136,12 @@ export const invoicesService = {
       throw new ValidationError('At least one item is required')
     }
 
+    const invoiceType = resolveInvoiceType(data)
+    const gstNumber = data.gstNumber?.trim().toUpperCase() || null
+    if (invoiceType === 'gst' && (!gstNumber || !GSTIN_PATTERN.test(gstNumber))) {
+      throw new ValidationError('A valid 15-character GSTIN is required for GST invoices')
+    }
+
     const items = data.items.map((item) => {
       const qty = roundInvoiceSqft(item.qty)
       return {
@@ -147,7 +150,7 @@ export const invoicesService = {
         amount: round2(qty * item.rate - (item.discountAmount ?? 0)),
       }
     })
-    const totals = calculateTotals({ ...data, items })
+    const totals = calculateTotals({ ...data, isGst: invoiceType === 'gst', items })
     const now = new Date()
     const invoiceDate = data.invoiceDate ? new Date(data.invoiceDate) : now
 
@@ -155,10 +158,12 @@ export const invoicesService = {
       customerId: data.customerId,
       invoiceDate,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-      isGst: data.isGst,
+      invoiceType,
+      gstNumber: invoiceType === 'gst' ? gstNumber : null,
+      isGst: invoiceType === 'gst',
       isHalfGst: data.isHalfGst,
       isTaxInclusive: data.isTaxInclusive,
-      gstPercent: data.isGst ? (data.gstPercent ?? 18) : undefined,
+      gstPercent: invoiceType === 'gst' ? (data.gstPercent ?? 18) : undefined,
       loadingRate: data.loadingRate,
       loadingAmount: totals.loadingAmount,
       receivedAmount: totals.receivedAmount,
@@ -196,37 +201,27 @@ export const invoicesService = {
       })),
     }
 
-    let lastError: unknown
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const invoiceNumber = await nextInvoiceNumber(invoiceDate)
+    const invoice = await invoicesRepository.createWithNextNumber(invoiceData, invoiceType)
+
+    if (totals.receivedAmount > 0) {
+      await invoicesRepository.createPayment({
+        invoiceId: invoice.id,
+        amount: totals.receivedAmount,
+        paymentMethod: data.paymentMethod,
+        accountId: (data as any).accountId ?? null,
+        paymentDate: invoiceDate,
+        remarks: 'Initial payment',
+      })
+    }
+    if ((data as any).accountId && totals.receivedAmount > 0) {
       try {
-        const invoice = await invoicesRepository.createWithItems({ ...invoiceData, invoiceNumber })
-        if (totals.receivedAmount > 0) {
-          await invoicesRepository.createPayment({
-            invoiceId: invoice.id,
-            amount: totals.receivedAmount,
-            paymentMethod: data.paymentMethod,
-            accountId: (data as any).accountId ?? null,
-            paymentDate: invoiceDate,
-            remarks: 'Initial payment',
-          })
-        }
-        if ((data as any).accountId && totals.receivedAmount > 0) {
-          try {
-            const { accountsService } = await import('../accounts/accounts.service')
-            await accountsService.applyInvoicePayment((data as any).accountId, invoice.id, totals.receivedAmount)
-          } catch (err) {
-            // ignore
-          }
-        }
-        return await this.getById(invoice.id)
-      } catch (error) {
-        if (!isUniqueConstraintError(error)) throw error
-        lastError = error
+        const { accountsService } = await import('../accounts/accounts.service')
+        await accountsService.applyInvoicePayment((data as any).accountId, invoice.id, totals.receivedAmount)
+      } catch (err) {
+        // ignore
       }
     }
-
-    throw lastError
+    return await this.getById(invoice.id)
   },
 
   async update(
@@ -234,6 +229,8 @@ export const invoicesService = {
     data: {
       status?: string
       dueDate?: string
+      invoiceType?: 'normal' | 'gst'
+      gstNumber?: string
       isGst?: boolean
       isHalfGst?: boolean
       isTaxInclusive?: boolean
@@ -258,6 +255,20 @@ export const invoicesService = {
     const invoice = await this.getById(id)
     const dbData: Record<string, unknown> = { ...data }
     if (data.dueDate) dbData.dueDate = new Date(data.dueDate)
+
+    const nextType = data.invoiceType ?? (data.isGst !== undefined ? (data.isGst ? 'gst' : 'normal') : undefined)
+    if (nextType) {
+      dbData.invoiceType = nextType
+      dbData.isGst = nextType === 'gst'
+      if (nextType === 'normal') dbData.gstNumber = null
+    }
+    if (data.gstNumber !== undefined) {
+      const gstNumber = data.gstNumber.trim().toUpperCase() || null
+      if ((nextType ?? invoice.invoiceType) === 'gst' && (!gstNumber || !GSTIN_PATTERN.test(gstNumber))) {
+        throw new ValidationError('A valid 15-character GSTIN is required for GST invoices')
+      }
+      dbData.gstNumber = gstNumber
+    }
 
     if (data.receivedAmount !== undefined) {
       const grandTotal = round2(Number(data.grandTotal ?? invoice.grandTotal ?? 0))

@@ -4,119 +4,238 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1.0000 0 0);
-  --foreground: oklch(0.1884 0.0128 248.5103);
-  --card: oklch(0.9784 0.0011 197.1387);
-  --card-foreground: oklch(0.1884 0.0128 248.5103);
-  --popover: oklch(1.0000 0 0);
-  --popover-foreground: oklch(0.1884 0.0128 248.5103);
-  --primary: oklch(0.6723 0.1606 244.9955);
-  --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.1884 0.0128 248.5103);
-  --secondary-foreground: oklch(1.0000 0 0);
-  --muted: oklch(0.9222 0.0013 286.3737);
-  --muted-foreground: oklch(0.1884 0.0128 248.5103);
-  --accent: oklch(0.9392 0.0166 250.8453);
-  --accent-foreground: oklch(0.6723 0.1606 244.9955);
-  --destructive: oklch(0.6188 0.2376 25.7658);
-  --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.9317 0.0118 231.6594);
-  --input: oklch(0.8711 0.0055 274.9669);
-  --ring: oklch(0.6818 0.1584 243.3540);
-  --chart-1: oklch(0.6723 0.1606 244.9955);
-  --chart-2: oklch(0.6907 0.1554 160.3454);
-  --chart-3: oklch(0.8214 0.1600 82.5337);
-  --chart-4: oklch(0.7064 0.1822 151.7125);
-  --chart-5: oklch(0.5919 0.2186 10.5826);
+  color-scheme: light;
+
+  --background: oklch(0.995 0.001 250);
+  --foreground: oklch(0.19 0.012 250);
+  --card: oklch(0.985 0.002 250);
+  --card-foreground: oklch(0.19 0.012 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.012 250);
+  --primary: oklch(0.55 0.19 258);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.965 0.004 250);
+  --secondary-foreground: oklch(0.21 0.014 250);
+  --muted: oklch(0.965 0.004 250);
+  --muted-foreground: oklch(0.52 0.014 250);
+  --accent: oklch(0.952 0.01 252);
+  --accent-foreground: oklch(0.28 0.03 255);
+  --destructive: oklch(0.58 0.21 27);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.62 0.14 155);
+  --success-foreground: oklch(0.29 0.08 155);
+  --warning: oklch(0.73 0.14 75);
+  --warning-foreground: oklch(0.34 0.08 70);
+  --info: oklch(0.58 0.14 240);
+  --info-foreground: oklch(0.29 0.09 240);
+  --border: oklch(0.918 0.006 250);
+  --input: oklch(0.885 0.008 250);
+  --ring: oklch(0.55 0.19 258);
+  --overlay: oklch(0.16 0.012 250 / 0.55);
+
+  --chart-1: oklch(0.55 0.19 258);
+  --chart-2: oklch(0.62 0.14 155);
+  --chart-3: oklch(0.73 0.14 75);
+  --chart-4: oklch(0.58 0.14 240);
+  --chart-5: oklch(0.62 0.19 25);
+
   --radius: 0.5rem;
-  --sidebar: oklch(0.9784 0.0011 197.1387);
-  --sidebar-foreground: oklch(0.1884 0.0128 248.5103);
-  --sidebar-primary: oklch(0.6723 0.1606 244.9955);
-  --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(0.9392 0.0166 250.8453);
-  --sidebar-accent-foreground: oklch(0.6723 0.1606 244.9955);
-  --sidebar-border: oklch(0.9271 0.0101 238.5177);
-  --sidebar-ring: oklch(0.6818 0.1584 243.3540);
-  --font-sans: Open Sans, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
-  --shadow-color: rgba(29,161,242,0.15);
-  --shadow-opacity: 0;
-  --shadow-blur: 0px;
-  --shadow-spread: 0px;
+  --sidebar: oklch(0.955 0.005 250);
+  --sidebar-foreground: oklch(0.2 0.014 250);
+  --sidebar-muted-foreground: oklch(0.46 0.012 250);
+  --sidebar-primary: oklch(0.55 0.19 258);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.925 0.012 252);
+  --sidebar-accent-foreground: oklch(0.22 0.03 255);
+  --sidebar-border: oklch(0.885 0.007 250);
+  --sidebar-ring: oklch(0.55 0.19 258);
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --shadow-color: oklch(0.2 0.02 250 / 0.08);
+  --shadow-opacity: 1;
+  --shadow-blur: 6px;
+  --shadow-spread: -2px;
   --shadow-offset-x: 0px;
   --shadow-offset-y: 2px;
   --letter-spacing: 0em;
   --spacing: 0.25rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
+  --shadow-2xs: 0 1px 2px 0 oklch(0.2 0.02 250 / 0.04);
+  --shadow-xs: 0 1px 2px 0 oklch(0.2 0.02 250 / 0.06);
+  --shadow-sm: 0 1px 2px 0 oklch(0.2 0.02 250 / 0.06), 0 1px 3px -1px oklch(0.2 0.02 250 / 0.05);
+  --shadow: 0 1px 2px 0 oklch(0.2 0.02 250 / 0.06), 0 1px 3px -1px oklch(0.2 0.02 250 / 0.05);
+  --shadow-md: 0 2px 4px -1px oklch(0.2 0.02 250 / 0.08), 0 4px 8px -3px oklch(0.2 0.02 250 / 0.06);
+  --shadow-lg: 0 4px 10px -2px oklch(0.2 0.02 250 / 0.1), 0 12px 24px -8px oklch(0.2 0.02 250 / 0.12);
+  --shadow-xl: 0 8px 16px -4px oklch(0.2 0.02 250 / 0.12), 0 20px 36px -12px oklch(0.2 0.02 250 / 0.14);
+  --shadow-2xl: 0 24px 48px -12px oklch(0.2 0.02 250 / 0.18);
   --tracking-normal: 0em;
+
+  /* EventCalendar (mors-component-library) tokens */
+  --mors-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto,
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --mors-text-2xs: 0.6875rem;
+  --mors-text-xs: 0.75rem;
+  --mors-text-sm: 0.8125rem;
+  --mors-text-base: 0.9375rem;
+  --mors-text-md: 1.0625rem;
+  --mors-text-lg: 1.25rem;
+  --mors-leading-normal: 1.45;
+  --mors-tracking-tight: -0.014em;
+  --mors-tracking-caps: 0.06em;
+  --mors-tracking-wide: 0.012em;
+  --mors-weight-regular: 400;
+  --mors-weight-medium: 500;
+  --mors-weight-semibold: 600;
+  --mors-space-1: 0.125rem;
+  --mors-space-2: 0.25rem;
+  --mors-space-3: 0.5rem;
+  --mors-space-4: 0.75rem;
+  --mors-space-5: 1rem;
+  --mors-space-6: 1.25rem;
+  --mors-control-height-sm: 32px;
+  --mors-control-height-md: 44px;
+  --mors-control-height-lg: 48px;
+  --mors-control-padding-sm: var(--mors-space-4);
+  --mors-control-padding-md: var(--mors-space-5);
+  --mors-control-padding-lg: var(--mors-space-6);
+  --mors-radius-xs: 4px;
+  --mors-radius-sm: 8px;
+  --mors-radius-md: 12px;
+  --mors-radius-lg: 16px;
+  --mors-radius-xl: 20px;
+  --mors-radius-pill: 999px;
+  --mors-radius-circle: 50%;
+  --mors-duration-instant: 80ms;
+  --mors-duration-fast: 140ms;
+  --mors-duration-base: 220ms;
+  --mors-ease-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --mors-ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --mors-neutral-0: #ffffff;
+  --mors-neutral-25: #fbfbfd;
+  --mors-neutral-50: #f5f5f7;
+  --mors-neutral-100: #ececef;
+  --mors-neutral-400: #a8a8b0;
+  --mors-neutral-500: #86868b;
+  --mors-neutral-600: #6e6e73;
+  --mors-neutral-900: #1d1d1f;
+  --mors-neutral-1000: #000000;
+  --mors-blue-100: #e8f1fc;
+  --mors-blue-500: #0071e3;
+  --mors-blue-600: #0077ed;
+  --mors-blue-700: #006edb;
+  --mors-green-100: #e2f6e9;
+  --mors-green-500: #1a9d4b;
+  --mors-green-600: #14803c;
+  --mors-amber-100: #fdf1dc;
+  --mors-amber-500: #b7791f;
+  --mors-amber-600: #96631a;
+  --mors-red-100: #fdeaea;
+  --mors-red-500: #d92b2b;
+  --mors-red-600: #b31f1f;
+  --mors-purple-100: #efeafe;
+  --mors-purple-500: #6b46e5;
+  --mors-color-surface: var(--mors-neutral-0);
+  --mors-color-surface-sunken: var(--mors-neutral-50);
+  --mors-color-surface-hover: var(--mors-neutral-50);
+  --mors-color-surface-active: var(--mors-neutral-100);
+  --mors-color-border: color-mix(in srgb, var(--mors-neutral-900) 12%, transparent);
+  --mors-color-border-strong: color-mix(in srgb, var(--mors-neutral-900) 24%, transparent);
+  --mors-color-border-subtle: color-mix(in srgb, var(--mors-neutral-900) 7%, transparent);
+  --mors-color-text: var(--mors-neutral-900);
+  --mors-color-text-secondary: var(--mors-neutral-600);
+  --mors-color-text-tertiary: var(--mors-neutral-500);
+  --mors-color-text-on-accent: #ffffff;
+  --mors-color-accent: var(--mors-blue-500);
+  --mors-color-accent-hover: var(--mors-blue-600);
+  --mors-color-accent-active: var(--mors-blue-700);
+  --mors-color-accent-soft: var(--mors-blue-100);
+  --mors-color-accent-text: var(--mors-blue-600);
+  --mors-color-success: var(--mors-green-500);
+  --mors-color-success-soft: var(--mors-green-100);
+  --mors-color-success-text: var(--mors-green-600);
+  --mors-color-warning: var(--mors-amber-500);
+  --mors-color-warning-soft: var(--mors-amber-100);
+  --mors-color-warning-text: var(--mors-amber-600);
+  --mors-color-danger: var(--mors-red-500);
+  --mors-color-danger-soft: var(--mors-red-100);
+  --mors-color-danger-text: var(--mors-red-600);
+  --mors-color-info: var(--mors-purple-500);
+  --mors-color-info-soft: var(--mors-purple-100);
+  --mors-color-info-text: var(--mors-purple-500);
+  --mors-shadow-xs: 0 1px 2px color-mix(in srgb, var(--mors-neutral-1000) 6%, transparent);
+  --mors-shadow-sm: 0 1px 2px color-mix(in srgb, var(--mors-neutral-1000) 5%, transparent),
+    0 2px 8px color-mix(in srgb, var(--mors-neutral-1000) 6%, transparent);
+  --mors-focus-color: var(--mors-color-accent);
+  --mors-focus-width: 3px;
+  --mors-focus-offset: 2px;
+  --mors-focus-ring: 0 0 0 var(--mors-focus-width)
+    color-mix(in srgb, var(--mors-focus-color) 40%, transparent);
 }
 
 .dark {
-  --background: oklch(0 0 0);
-  --foreground: oklch(0.9328 0.0025 228.7857);
-  --card: oklch(0.2097 0.0080 274.5332);
-  --card-foreground: oklch(0.8853 0 0);
-  --popover: oklch(0 0 0);
-  --popover-foreground: oklch(0.9328 0.0025 228.7857);
-  --primary: oklch(0.6692 0.1607 245.0110);
-  --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.9622 0.0035 219.5331);
-  --secondary-foreground: oklch(0.1884 0.0128 248.5103);
-  --muted: oklch(0.2090 0 0);
-  --muted-foreground: oklch(0.5637 0.0078 247.9662);
-  --accent: oklch(0.1928 0.0331 242.5459);
-  --accent-foreground: oklch(0.6692 0.1607 245.0110);
-  --destructive: oklch(0.6188 0.2376 25.7658);
-  --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.2674 0.0047 248.0045);
-  --input: oklch(0.3674 0.0080 248.0045);
-  --ring: oklch(0.6818 0.1584 243.3540);
-  --chart-1: oklch(0.6723 0.1606 244.9955);
-  --chart-2: oklch(0.6907 0.1554 160.3454);
-  --chart-3: oklch(0.8214 0.1600 82.5337);
-  --chart-4: oklch(0.7064 0.1822 151.7125);
-  --chart-5: oklch(0.5919 0.2186 10.5826);
-  --sidebar: oklch(0.2097 0.0080 274.5332);
-  --sidebar-foreground: oklch(0.8853 0 0);
-  --sidebar-primary: oklch(0.6818 0.1584 243.3540);
-  --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(0.1928 0.0331 242.5459);
-  --sidebar-accent-foreground: oklch(0.6692 0.1607 245.0110);
-  --sidebar-border: oklch(0.3795 0.0220 240.5943);
-  --sidebar-ring: oklch(0.6818 0.1584 243.3540);
-  --radius: 0.5rem;
-  --font-sans: Open Sans, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: Menlo, monospace;
-  --shadow-color: rgba(29,161,242,0.25);
-  --shadow-opacity: 0;
-  --shadow-blur: 0px;
-  --shadow-spread: 0px;
-  --shadow-offset-x: 0px;
-  --shadow-offset-y: 2px;
-  --letter-spacing: 0em;
-  --spacing: 0.25rem;
-  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-sm: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-md: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-lg: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00), 0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0.00);
-  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0.00);
+  color-scheme: dark;
+
+  --background: oklch(0.145 0.008 250);
+  --foreground: oklch(0.96 0.002 250);
+  --card: oklch(0.185 0.01 250);
+  --card-foreground: oklch(0.94 0.003 250);
+  --popover: oklch(0.205 0.01 250);
+  --popover-foreground: oklch(0.96 0.002 250);
+  --primary: oklch(0.62 0.17 258);
+  --primary-foreground: oklch(0.12 0.018 258);
+  --secondary: oklch(0.225 0.01 250);
+  --secondary-foreground: oklch(0.94 0.003 250);
+  --muted: oklch(0.225 0.008 250);
+  --muted-foreground: oklch(0.7 0.012 250);
+  --accent: oklch(0.255 0.014 252);
+  --accent-foreground: oklch(0.94 0.003 250);
+  --destructive: oklch(0.65 0.19 27);
+  --destructive-foreground: oklch(0.12 0.018 27);
+  --success: oklch(0.7 0.13 155);
+  --success-foreground: oklch(0.88 0.08 155);
+  --warning: oklch(0.78 0.13 75);
+  --warning-foreground: oklch(0.9 0.08 75);
+  --info: oklch(0.68 0.13 240);
+  --info-foreground: oklch(0.88 0.08 240);
+  --border: oklch(0.29 0.01 250);
+  --input: oklch(0.34 0.012 250);
+  --ring: oklch(0.62 0.17 258);
+  --overlay: oklch(0.08 0.01 250 / 0.68);
+
+  --chart-1: oklch(0.62 0.17 258);
+  --chart-2: oklch(0.7 0.13 155);
+  --chart-3: oklch(0.78 0.13 75);
+  --chart-4: oklch(0.68 0.13 240);
+  --chart-5: oklch(0.65 0.19 25);
+
+  --sidebar: oklch(0.135 0.01 250);
+  --sidebar-foreground: oklch(0.96 0.002 250);
+  --sidebar-muted-foreground: oklch(0.68 0.012 250);
+  --sidebar-primary: oklch(0.62 0.17 258);
+  --sidebar-primary-foreground: oklch(0.12 0.018 258);
+  --sidebar-accent: oklch(0.225 0.016 252);
+  --sidebar-accent-foreground: oklch(0.96 0.002 250);
+  --sidebar-border: oklch(0.27 0.01 250);
+  --sidebar-ring: oklch(0.62 0.17 258);
+
+  --shadow-color: oklch(0 0 0 / 0.4);
+  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.16);
+  --shadow-xs: 0 1px 2px 0 oklch(0 0 0 / 0.22);
+  --shadow-sm: 0 1px 2px 0 oklch(0 0 0 / 0.24), 0 1px 3px -1px oklch(0 0 0 / 0.2);
+  --shadow: 0 1px 2px 0 oklch(0 0 0 / 0.24), 0 1px 3px -1px oklch(0 0 0 / 0.2);
+  --shadow-md: 0 2px 4px -1px oklch(0 0 0 / 0.28), 0 4px 8px -3px oklch(0 0 0 / 0.24);
+  --shadow-lg: 0 4px 10px -2px oklch(0 0 0 / 0.34), 0 12px 24px -8px oklch(0 0 0 / 0.4);
+  --shadow-xl: 0 8px 16px -4px oklch(0 0 0 / 0.4), 0 20px 36px -12px oklch(0 0 0 / 0.46);
+  --shadow-2xl: 0 24px 48px -12px oklch(0 0 0 / 0.55);
 }
 
 @theme inline {
-  --font-sans: Open Sans, sans-serif;
-  --font-mono: Menlo, monospace;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-serif: ui-serif, Georgia, serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -133,66 +252,87 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-serif: Georgia, serif;
-  --radius: 0.5rem;
-  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
-  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
-  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
-  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
-  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
-  --tracking-normal: var(--tracking-normal);
-  --shadow-2xl: var(--shadow-2xl);
-  --shadow-xl: var(--shadow-xl);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-md: var(--shadow-md);
-  --shadow: var(--shadow);
-  --shadow-sm: var(--shadow-sm);
-  --shadow-xs: var(--shadow-xs);
-  --shadow-2xs: var(--shadow-2xs);
-  --spacing: var(--spacing);
-  --letter-spacing: var(--letter-spacing);
-  --shadow-offset-y: var(--shadow-offset-y);
-  --shadow-offset-x: var(--shadow-offset-x);
-  --shadow-spread: var(--shadow-spread);
-  --shadow-blur: var(--shadow-blur);
-  --shadow-opacity: var(--shadow-opacity);
-  --color-shadow-color: var(--shadow-color);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --tracking-normal: 0em;
+  --tracking-tight: -0.025em;
+  --tracking-tighter: -0.05em;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
+
+  --spacing: var(--spacing);
+  --letter-spacing: var(--letter-spacing);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+  --shadow-color: var(--shadow-color);
+  --shadow-opacity: var(--shadow-opacity);
+  --shadow-offset-x: var(--shadow-offset-x);
+  --shadow-offset-y: var(--shadow-offset-y);
+  --shadow-blur: var(--shadow-blur);
+  --shadow-spread: var(--shadow-spread);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/40;
   }
+
+  html {
+    @apply antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   html,
   body,
   #root {
     @apply min-h-full w-full;
   }
+
   body {
-    @apply bg-background text-foreground text-sm;
+    @apply bg-background text-foreground text-sm leading-relaxed tabular-nums antialiased;
     font-family: var(--font-sans);
     letter-spacing: var(--tracking-normal);
     overflow-x: hidden;
@@ -209,7 +349,7 @@
   }
 
   thead {
-    @apply bg-muted/30;
+    @apply bg-muted/40;
   }
 
   thead tr {
@@ -217,7 +357,7 @@
   }
 
   tbody tr {
-    @apply border-b border-border/60 transition-colors hover:bg-muted/30 data-[state=selected]:bg-muted/50;
+    @apply border-b border-border/60 transition-colors duration-150 ease-out hover:bg-muted/50 data-[state=selected]:bg-muted;
   }
 
   tbody tr:last-child {
@@ -225,7 +365,7 @@
   }
 
   th {
-    @apply h-10 whitespace-nowrap px-3 text-left align-middle text-[11px] font-semibold uppercase tracking-wide text-muted-foreground;
+    @apply h-9 whitespace-nowrap px-3 text-left align-middle text-xs font-medium text-muted-foreground;
   }
 
   td {
@@ -233,10 +373,326 @@
   }
 
   tfoot tr {
-    @apply border-t bg-muted/20;
+    @apply border-t bg-muted/30;
   }
 
   tfoot td {
     @apply px-3 py-2.5 font-semibold;
+  }
+}
+
+@keyframes route-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.route-enter {
+  animation: route-in 200ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* EventCalendar (mors-component-library) */
+@keyframes mors-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mors-event-calendar {
+  width: 100%;
+  font-family: var(--mors-font-sans);
+  font-size: var(--mors-text-base);
+  line-height: var(--mors-leading-normal);
+  color: var(--mors-color-text);
+}
+
+.mors-event-calendar-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--mors-space-3);
+  margin-bottom: var(--mors-space-5);
+}
+
+.mors-event-calendar-title {
+  margin: 0 auto 0 0;
+  font-size: var(--mors-text-lg);
+  font-weight: var(--mors-weight-semibold);
+  letter-spacing: var(--mors-tracking-tight);
+}
+
+.mors-event-calendar-today {
+  margin-left: auto;
+}
+
+.mors-event-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mors-space-5);
+}
+
+@media (min-width: 1024px) {
+  .mors-event-calendar-layout {
+    grid-template-columns: minmax(0, 1.6fr) minmax(18rem, 1fr);
+  }
+}
+
+.mors-event-calendar-month,
+.mors-event-calendar-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--mors-color-border);
+  border-radius: var(--mors-radius-lg);
+  background: var(--mors-color-surface);
+}
+
+.mors-event-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--mors-color-border-subtle);
+  background: var(--mors-color-surface-sunken);
+}
+
+.mors-event-calendar-weekday {
+  padding: var(--mors-space-3) var(--mors-space-2);
+  text-align: center;
+  font-size: var(--mors-text-2xs);
+  font-weight: var(--mors-weight-semibold);
+  letter-spacing: var(--mors-tracking-caps);
+  text-transform: uppercase;
+  color: var(--mors-color-text-tertiary);
+}
+
+.mors-event-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.mors-event-calendar-cell {
+  display: flex;
+  min-height: 84px;
+  flex-direction: column;
+  gap: var(--mors-space-2);
+  padding: var(--mors-space-3);
+  border: 0;
+  border-right: 1px solid var(--mors-color-border-subtle);
+  border-bottom: 1px solid var(--mors-color-border-subtle);
+  background: var(--mors-color-surface);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--mors-duration-fast) var(--mors-ease-standard);
+}
+
+.mors-event-calendar-cell:nth-child(7n) {
+  border-right: 0;
+}
+
+.mors-event-calendar-cell:hover {
+  background: var(--mors-color-surface-hover);
+}
+
+.mors-event-calendar-cell--outside {
+  background: var(--mors-color-surface-sunken);
+  color: var(--mors-color-text-tertiary);
+}
+
+.mors-event-calendar-cell--selected {
+  box-shadow: inset 0 0 0 2px var(--mors-color-accent);
+}
+
+.mors-event-calendar-cell--today .mors-event-calendar-date {
+  border-radius: var(--mors-radius-circle);
+  background: var(--mors-color-accent);
+  color: var(--mors-color-text-on-accent);
+}
+
+.mors-event-calendar-date {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--mors-text-xs);
+  font-weight: var(--mors-weight-semibold);
+}
+
+.mors-event-calendar-chips {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--mors-space-1);
+}
+
+.mors-event-calendar-chip {
+  display: block;
+  overflow: hidden;
+  border-radius: var(--mors-radius-xs);
+  padding: 1px var(--mors-space-2);
+  font-size: var(--mors-text-2xs);
+  font-weight: var(--mors-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mors-event-calendar-chip--accent {
+  background: var(--mors-color-accent-soft);
+  color: var(--mors-color-accent-text);
+}
+
+.mors-event-calendar-chip--success {
+  background: var(--mors-color-success-soft);
+  color: var(--mors-color-success-text);
+}
+
+.mors-event-calendar-chip--warning {
+  background: var(--mors-color-warning-soft);
+  color: var(--mors-color-warning-text);
+}
+
+.mors-event-calendar-chip--danger {
+  background: var(--mors-color-danger-soft);
+  color: var(--mors-color-danger-text);
+}
+
+.mors-event-calendar-chip--info {
+  background: var(--mors-color-info-soft);
+  color: var(--mors-color-info-text);
+}
+
+.mors-event-calendar-chip--neutral {
+  background: var(--mors-color-surface-active);
+  color: var(--mors-color-text-secondary);
+}
+
+.mors-event-calendar-more {
+  padding-left: var(--mors-space-2);
+  font-size: var(--mors-text-2xs);
+  font-weight: var(--mors-weight-medium);
+  color: var(--mors-color-text-tertiary);
+}
+
+.mors-event-calendar-panel {
+  display: flex;
+  max-height: 42rem;
+  flex-direction: column;
+  gap: var(--mors-space-4);
+  overflow-y: auto;
+  padding: var(--mors-space-5);
+}
+
+.mors-event-calendar-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--mors-space-3);
+}
+
+.mors-event-calendar-panel-title {
+  margin: 0;
+  font-size: var(--mors-text-md);
+  font-weight: var(--mors-weight-semibold);
+  letter-spacing: var(--mors-tracking-tight);
+}
+
+.mors-event-calendar-panel-count {
+  margin: 0;
+  font-size: var(--mors-text-xs);
+  color: var(--mors-color-text-tertiary);
+}
+
+.mors-event-calendar-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mors-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mors-event-calendar-item {
+  min-width: 0;
+}
+
+.mors-event-calendar-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mors-space-3);
+}
+
+.mors-event-calendar-item-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--mors-space-1);
+}
+
+.mors-event-calendar-time {
+  font-family: var(--font-mono);
+  font-size: var(--mors-text-xs);
+  color: var(--mors-color-text-tertiary);
+}
+
+.mors-event-calendar-item-title {
+  font-size: var(--mors-text-sm);
+  font-weight: var(--mors-weight-semibold);
+}
+
+.mors-event-calendar-item-note {
+  font-size: var(--mors-text-xs);
+  color: var(--mors-color-text-secondary);
+}
+
+.mors-event-calendar-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mors-space-3);
+}
+
+.mors-event-calendar-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--mors-space-2);
+}
+
+.mors-event-calendar-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mors-space-3);
+  border-top: 1px solid var(--mors-color-border-subtle);
+  padding-top: var(--mors-space-4);
+}
+
+.mors-event-calendar-composer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--mors-space-3);
+}
+
+@media (max-width: 640px) {
+  .mors-event-calendar-cell {
+    min-height: 72px;
+    padding: var(--mors-space-2);
+  }
+
+  .mors-event-calendar-composer-row {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

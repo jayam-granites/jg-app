@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import { useProduct } from '../hooks/use-products'
-import { formatDateTime } from '@/lib/date'
+import { PageLoading } from '@/shared/components/page-loading'
+import { formatDate } from '@/lib/date'
 
 export function ProductDetailPage() {
   const { id } = useParams({ from: '/products/$id' })
@@ -16,23 +17,17 @@ export function ProductDetailPage() {
 
   const product = (productRes as any)?.data
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-40 text-muted-foreground">
-        Loading...
-      </div>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!product) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/products' })}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Product not found</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Product not found</h1>
           </div>
         </div>
       </div>
@@ -47,11 +42,11 @@ export function ProductDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/products' })}>
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="size-4" />
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight">{product.name}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">{product.name}</h1>
               <Badge variant={product.isActive ? 'default' : 'secondary'} className="rounded-md border-0">
                 {product.isActive ? 'Active' : 'Inactive'}
               </Badge>
@@ -62,7 +57,7 @@ export function ProductDetailPage() {
           </div>
         </div>
         <Button onClick={() => navigate({ to: `/products/${product.id}/edit` })}>
-          <Pencil className="mr-2 h-4 w-4" /> Edit Product
+          <Pencil className="mr-2 size-4" /> Edit Product
         </Button>
       </div>
 
@@ -87,7 +82,7 @@ export function ProductDetailPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium">Created</p>
-              <p className="text-sm mt-0.5">{formatDateTime(product.createdAt)}</p>
+              <p className="text-sm mt-0.5">{formatDate(product.createdAt)}</p>
             </div>
             {product.description && (
               <div className="col-span-full">
@@ -147,7 +142,7 @@ export function ProductDetailPage() {
                       <TableCell className="py-2">
                         <Badge
                           variant={v.isActive ? 'default' : 'secondary'}
-                          className="rounded-md border-0 text-[10px]"
+                          className="rounded-md border-0 text-xs"
                         >
                           {v.isActive ? 'Active' : 'Inactive'}
                         </Badge>

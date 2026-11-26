@@ -78,15 +78,15 @@ export function CloseSaleDialog({ invoice, open, onOpenChange }: CloseSaleDialog
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Received Amount</span>
-            <span className="font-mono text-green-700">₹{totals.received.toFixed(2)}</span>
+            <span className="font-mono text-success">₹{totals.received.toFixed(2)}</span>
           </div>
           {totals.discountToAdd > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="rounded-lg border border-warning/30 bg-warning/12 px-3 py-2 text-xs text-warning">
               Received amount differs from the total bill by ₹{totals.discountToAdd.toFixed(2)}. This amount will be added to the discount and the balance will be cleared.
             </div>
           )}
           {totals.mismatch < -0.005 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="rounded-lg border border-warning/30 bg-warning/12 px-3 py-2 text-xs text-warning">
               Received amount is higher than the total bill by ₹{Math.abs(totals.mismatch).toFixed(2)}. The sale will be closed without adding a discount.
             </div>
           )}
@@ -104,7 +104,7 @@ export function CloseSaleDialog({ invoice, open, onOpenChange }: CloseSaleDialog
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleCloseSale} disabled={alreadyClosed || updateInvoice.isPending}>
-            {updateInvoice.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Closing...</> : 'Confirm Close Sale'}
+            {updateInvoice.isPending ? <><Loader2 className="mr-2 size-4 animate-spin" /> Closing...</> : 'Confirm Close Sale'}
           </Button>
         </DialogFooter>
       </DialogContent>

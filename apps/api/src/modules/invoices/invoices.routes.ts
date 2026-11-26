@@ -10,8 +10,13 @@ import { invoicesService } from './invoices.service'
 
 export const invoicesRoutes = new Hono()
   .get('/', async (c) => {
-    const data = await invoicesService.getAll()
+    const type = c.req.query('type')
+    const data = await invoicesService.getAll(type === 'gst' || type === 'normal' ? type : undefined)
     return c.json({ data })
+  })
+  .get('/numbering', async (c) => {
+    const settings = await invoicesService.getNumberingSettings()
+    return c.json({ data: settings })
   })
   .get('/:id', async (c) => {
     const id = Number(c.req.param('id'))

@@ -4,62 +4,63 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { safeParse } from 'valibot'
 import {
   CreateCustomerEnquirySchema,
-  type CreateCustomerEnquiryFormData,
+  UpdateCustomerEnquirySchema,
 } from '@jg-app/validators'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { DataTable } from '@/shared/components/data-table'
 import type { DataTableRowAction } from '@/shared/components/data-table'
 import { PageLayout } from '@/shared/components/page-layout'
-import { useArchiveEnquiry, useCreateEnquiry, useEnquiries, useUpdateEnquiry } from '../hooks/use-enquiries'
+import {
+  useArchiveEnquiry,
+  useCreateEnquiry,
+  useEnquiries,
+  useLogFollowUp,
+  useUpdateEnquiry,
+  type EnquiryRow,
+  type EnquiryStatus,
+} from '../hooks/use-enquiries'
 
-type EnquiryRow = {
-  id: number
-  customerName: string
-  mobile: string
-  siteLocation: string | null
-  materialInterest: string
-  sizeOrUnit: string | null
-  quantity: number | string | null
-  quotedPrice: number | string | null
-  notes: string | null
-  status: 'NEW' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST'
-  isActive: boolean
-}
-
-const statuses: NonNullable<CreateCustomerEnquiryFormData['status']>[] = [
-  'NEW',
-  'QUOTED',
-  'NEGOTIATING',
-  'WON',
-  'LOST',
+const statuses: EnquiryStatus[] = [
+  'OPEN',
+  'FOLLOW_UP_1',
+  'FOLLOW_UP_2',
+  'CLOSED_WON',
+  'CLOSED_LOST',
 ]
+
+function toLocalInputValue(value: string): string {
+  const date = new Date(value)
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+  return date.toISOString().slice(0, 16)
+}
 
 export function EnquiriesPage() {
   const { data: response, isLoading } = useEnquiries()
   const createEnquiry = useCreateEnquiry()
   const updateEnquiry = useUpdateEnquiry()
   const archiveEnquiry = useArchiveEnquiry()
+  const logFollowUp = useLogFollowUp()
   const enquiries: EnquiryRow[] = response?.data ?? []
 
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<EnquiryRow | null>(null)
   const [customerName, setCustomerName] = useState('')
   const [mobile, setMobile] = useState('')
-  const [siteLocation, setSiteLocation] = useState('')
-  const [materialInterest, setMaterialInterest] = useState('')
-  const [sizeOrUnit, setSizeOrUnit] = useState('')
-  const [quantity, setQuantity] = useState('')
-  const [quotedPrice, setQuotedPrice] = useState('')
-  const [notes, setNotes] = useState('')
-  const [status, setStatus] = useState<EnquiryRow['status']>('NEW')
+  const [requirementsNotes, setRequirementsNotes] = useState('')
+  const [status, setStatus] = useState<EnquiryStatus>('OPEN')
+  const [closeReason, setCloseReason] = useState('')
+  const [followUpDueDate, setFollowUpDueDate] = useState('')
   const [isActive, setIsActive] = useState(true)
   const [error, setError] = useState('')
+
+  const isClosed = status === 'CLOSED_WON' || status === 'CLOSED_LOST'
 
   const reset = (nextOpen: boolean) => {
     setOpen(nextOpen)
@@ -67,13 +68,10 @@ export function EnquiriesPage() {
       setEditing(null)
       setCustomerName('')
       setMobile('')
-      setSiteLocation('')
-      setMaterialInterest('')
-      setSizeOrUnit('')
-      setQuantity('')
-      setQuotedPrice('')
-      setNotes('')
-      setStatus('NEW')
+      setRequirementsNotes('')
+      setStatus('OPEN')
+      setCloseReason('')
+      setFollowUpDueDate('')
       setIsActive(true)
       setError('')
     }
@@ -83,13 +81,10 @@ export function EnquiriesPage() {
     setEditing(enquiry)
     setCustomerName(enquiry.customerName)
     setMobile(enquiry.mobile)
-    setSiteLocation(enquiry.siteLocation ?? '')
-    setMaterialInterest(enquiry.materialInterest)
-    setSizeOrUnit(enquiry.sizeOrUnit ?? '')
-    setQuantity(enquiry.quantity == null ? '' : String(enquiry.quantity))
-    setQuotedPrice(enquiry.quotedPrice == null ? '' : String(enquiry.quotedPrice))
-    setNotes(enquiry.notes ?? '')
+    setRequirementsNotes(enquiry.requirementsNotes ?? '')
     setStatus(enquiry.status)
+    setCloseReason(enquiry.closeReason ?? '')
+    setFollowUpDueDate(enquiry.followUpDueDate ? toLocalInputValue(enquiry.followUpDueDate) : '')
     setIsActive(enquiry.isActive)
     setError('')
     setOpen(true)
@@ -99,6 +94,11 @@ export function EnquiriesPage() {
     () => [
       { label: 'Edit', onClick: edit },
       {
+        label: 'Log follow-up',
+        disabled: (enquiry) => !enquiry.isActive,
+        onClick: (enquiry) => logFollowUp.mutate({ id: enquiry.id }),
+      },
+      {
         label: (enquiry) => (enquiry.isActive ? 'Archive' : 'Restore'),
         onClick: (enquiry) => {
           if (enquiry.isActive) archiveEnquiry.mutate(enquiry.id)
@@ -106,80 +106,105 @@ export function EnquiriesPage() {
         },
       },
     ],
-    [archiveEnquiry, updateEnquiry],
+    [archiveEnquiry, logFollowUp, updateEnquiry],
   )
 
   const columns: ColumnDef<EnquiryRow>[] = [
     { accessorKey: 'customerName', header: 'Customer' },
     { accessorKey: 'mobile', header: 'Mobile' },
-    { accessorKey: 'materialInterest', header: 'Material' },
     {
-      id: 'quantity',
-      header: 'Requirement',
-      cell: ({ row }) => [row.original.quantity, row.original.sizeOrUnit].filter(Boolean).join(' ') || '-',
-    },
-    {
-      accessorKey: 'quotedPrice',
-      header: 'Quoted price',
+      accessorKey: 'status',
+      header: 'Status',
       cell: ({ getValue }) => {
-        const value = getValue<number | string | null>()
-        return value == null ? '-' : `₹${Number(value).toLocaleString('en-IN')}`
+        const value = getValue<EnquiryStatus>()
+        return (
+          <Badge
+            variant={
+              value === 'CLOSED_WON'
+                ? 'default'
+                : value === 'CLOSED_LOST'
+                  ? 'destructive'
+                  : value.startsWith('FOLLOW_UP')
+                    ? 'secondary'
+                    : 'outline'
+            }
+          >
+            {value.replaceAll('_', ' ')}
+          </Badge>
+        )
       },
     },
     {
-      accessorKey: 'status',
-      header: 'Pipeline',
-      cell: ({ getValue }) => <Badge variant="secondary">{getValue<string>().replaceAll('_', ' ')}</Badge>,
+      accessorKey: 'followUpCount',
+      header: 'Follow-ups',
+      cell: ({ getValue }) => <Badge variant="outline">{getValue<number>()}</Badge>,
+    },
+    {
+      accessorKey: 'closeReason',
+      header: 'Close reason',
+      cell: ({ getValue }) => getValue<string | null | undefined>() || '—',
     },
     {
       accessorKey: 'isActive',
       header: 'Record',
-      cell: ({ getValue }) => (
-        <Badge variant={getValue<boolean>() ? 'outline' : 'secondary'}>
-          {getValue<boolean>() ? 'Active' : 'Archived'}
-        </Badge>
-      ),
+      cell: ({ getValue }) => {
+        const active = getValue<boolean>()
+        return (
+          <Badge variant={active ? 'outline' : 'secondary'}>
+            {active ? 'Active' : 'Archived'}
+          </Badge>
+        )
+      },
     },
   ]
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setError('')
+    if (isClosed && !closeReason.trim()) {
+      setError('Close reason is required when closing an enquiry')
+      return
+    }
+
     const data = {
       customerName: customerName.trim(),
       mobile: mobile.trim(),
-      siteLocation: siteLocation.trim() || undefined,
-      materialInterest: materialInterest.trim(),
-      sizeOrUnit: sizeOrUnit.trim() || undefined,
-      quantity: quantity ? Number(quantity) : undefined,
-      quotedPrice: quotedPrice ? Number(quotedPrice) : undefined,
-      notes: notes.trim() || undefined,
+      requirementsNotes: requirementsNotes.trim(),
       status,
+      closeReason: closeReason.trim() || undefined,
       isActive,
-    }
-    const parsed = safeParse(CreateCustomerEnquirySchema, data)
-    if (!parsed.success) {
-      setError(parsed.issues[0]?.message ?? 'Check the enquiry details')
-      return
+      ...(editing && followUpDueDate
+        ? { followUpDueDate: new Date(followUpDueDate).toISOString() }
+        : {}),
     }
 
     const onError = (reason: Error) => setError(reason.message)
     if (editing) {
+      const parsed = safeParse(UpdateCustomerEnquirySchema, data)
+      if (!parsed.success) {
+        setError(parsed.issues[0]?.message ?? 'Check the enquiry details')
+        return
+      }
       updateEnquiry.mutate(
         { id: editing.id, data: parsed.output },
         { onSuccess: () => reset(false), onError },
       )
     } else {
+      const parsed = safeParse(CreateCustomerEnquirySchema, data)
+      if (!parsed.success) {
+        setError(parsed.issues[0]?.message ?? 'Check the enquiry details')
+        return
+      }
       createEnquiry.mutate(parsed.output, { onSuccess: () => reset(false), onError })
     }
   }
 
-  const saving = createEnquiry.isPending || updateEnquiry.isPending
+  const saving = createEnquiry.isPending || updateEnquiry.isPending || logFollowUp.isPending
 
   return (
     <PageLayout
       title="Customer Enquiries"
-      description="Track requirements, pricing, and follow-up history"
+      description="Track requirements, follow-ups and close reasons"
       action={
         <Button onClick={() => setOpen(true)}>
           <Plus data-icon="inline-start" /> Add enquiry
@@ -194,12 +219,12 @@ export function EnquiriesPage() {
         isLoading={isLoading}
         emptyState={{
           title: 'No enquiries found',
-          description: 'Capture a customer requirement to start the sales pipeline.',
+          description: 'Capture a customer requirement to start the follow-up pipeline.',
         }}
       />
-      {(archiveEnquiry.error || updateEnquiry.error) && (
+      {(archiveEnquiry.error || updateEnquiry.error || logFollowUp.error) && (
         <p role="alert" className="text-sm text-destructive">
-          {(archiveEnquiry.error ?? updateEnquiry.error)?.message}
+          {(archiveEnquiry.error ?? updateEnquiry.error ?? logFollowUp.error)?.message}
         </p>
       )}
 
@@ -219,42 +244,45 @@ export function EnquiriesPage() {
               <Input id="enquiry-mobile" value={mobile} onChange={(event) => setMobile(event.target.value)} required />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="enquiry-location">Site location</Label>
-              <Input id="enquiry-location" value={siteLocation} onChange={(event) => setSiteLocation(event.target.value)} />
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="enquiry-material">Material interest</Label>
-              <Input id="enquiry-material" value={materialInterest} onChange={(event) => setMaterialInterest(event.target.value)} required />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="enquiry-quantity">Quantity</Label>
-                <Input id="enquiry-quantity" type="number" min="0" step="0.01" value={quantity} onChange={(event) => setQuantity(event.target.value)} />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="enquiry-unit">Size / unit</Label>
-                <Input id="enquiry-unit" value={sizeOrUnit} onChange={(event) => setSizeOrUnit(event.target.value)} placeholder="e.g. sqft" />
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="enquiry-price">Quoted price</Label>
-              <Input id="enquiry-price" type="number" min="0" step="0.01" value={quotedPrice} onChange={(event) => setQuotedPrice(event.target.value)} />
+              <Label htmlFor="enquiry-requirements">Requirements, quotes &amp; follow-up history</Label>
+              <Textarea id="enquiry-requirements" value={requirementsNotes} onChange={(event) => setRequirementsNotes(event.target.value)} />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="enquiry-status">Status</Label>
-              <select
-                id="enquiry-status"
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={status}
-                onChange={(event) => setStatus(event.target.value as EnquiryRow['status'])}
-              >
-                {statuses.map((value) => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}
-              </select>
+              <Select value={status} onValueChange={(value) => setStatus(value as EnquiryStatus)}>
+                <SelectTrigger id="enquiry-status" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {statuses.map((value) => (
+                      <SelectItem key={value} value={value}>{value.replaceAll('_', ' ')}</SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="enquiry-notes">Follow-up notes & requirements history</Label>
-              <Textarea id="enquiry-notes" value={notes} onChange={(event) => setNotes(event.target.value)} />
+              <Label htmlFor="enquiry-close-reason">Close reason</Label>
+              <Input
+                id="enquiry-close-reason"
+                value={closeReason}
+                onChange={(event) => setCloseReason(event.target.value)}
+                required={isClosed}
+                placeholder={isClosed ? 'Required when closing' : 'Optional'}
+              />
             </div>
+            {editing && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="enquiry-follow-up-date">Next follow-up date</Label>
+                <Input
+                  id="enquiry-follow-up-date"
+                  type="datetime-local"
+                  value={followUpDueDate}
+                  onChange={(event) => setFollowUpDueDate(event.target.value)}
+                />
+              </div>
+            )}
             <label className="flex items-center gap-2 text-sm">
               <Checkbox checked={isActive} onCheckedChange={(checked) => setIsActive(checked === true)} />
               Active enquiry

@@ -7,24 +7,31 @@ import type {
 
 const api = client as any
 
+export type EnquiryStatus =
+  | 'OPEN'
+  | 'FOLLOW_UP_1'
+  | 'FOLLOW_UP_2'
+  | 'CLOSED_WON'
+  | 'CLOSED_LOST'
+
+export type EnquiryRow = {
+  id: number
+  customerName: string
+  mobile: string
+  requirementsNotes: string | null
+  status: EnquiryStatus
+  followUpCount: number
+  closeReason?: string | null
+  followUpDueDate?: string | null
+  isActive: boolean
+}
+
 export function useEnquiries() {
   return useQuery({
     queryKey: ['enquiries'],
     queryFn: () =>
       api.api.enquiries.$get().then((response: Response) => response.json()) as Promise<{
-        data: {
-          id: number
-          customerName: string
-          mobile: string
-          siteLocation: string | null
-          materialInterest: string
-          sizeOrUnit: string | null
-          quantity: number | string | null
-          quotedPrice: number | string | null
-          notes: string | null
-          status: 'NEW' | 'QUOTED' | 'NEGOTIATING' | 'WON' | 'LOST'
-          isActive: boolean
-        }[]
+        data: EnquiryRow[]
       }>,
   })
 }
@@ -40,7 +47,11 @@ export function useCreateEnquiry() {
       }
       return response.json()
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['enquiries'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enquiries'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['crm'] })
+    },
   })
 }
 
@@ -64,7 +75,11 @@ export function useUpdateEnquiry() {
       }
       return response.json()
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['enquiries'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enquiries'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['crm'] })
+    },
   })
 }
 
@@ -78,6 +93,32 @@ export function useArchiveEnquiry() {
       if (!response.ok) throw new Error('Failed to archive enquiry')
       return response.json()
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['enquiries'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enquiries'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['crm'] })
+    },
+  })
+}
+
+export function useLogFollowUp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, notes }: { id: number; notes?: string }) => {
+      const response = await api.api.enquiries[':id']['follow-ups'].$post({
+        param: { id: String(id) },
+        json: notes ? { notes } : {},
+      })
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error?.message ?? 'Failed to log follow-up')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enquiries'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['crm'] })
+    },
   })
 }

@@ -10,7 +10,7 @@ import { useMeasurements, useCreateMeasurement, useDeleteMeasurement } from '@/f
 import { useConvertMeasurementToSale } from '@/features/measurements/hooks/use-convert-to-sale'
 import { exportMeasurementToExcel, shareMeasurementPdf, toMeasurementExport, buildMeasurementPdf } from '@/features/measurements/lib/export'
 import { previewPdf } from '@/lib/pdf'
-import { formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
 
 type MeasurementRow = {
   id: number
@@ -153,7 +153,7 @@ function MeasurementsListPage() {
         header: 'Created',
         cell: ({ getValue }) => (
           <span className="text-sm text-muted-foreground">
-            {formatDateTime(getValue() as string)}
+            {formatDate(getValue() as string)}
           </span>
         ),
       },
@@ -187,11 +187,11 @@ function MeasurementsListPage() {
       title="Measurements"
       description="Manage measurement sessions for slab tracking"
       action={
-        <Button onClick={handleCreate} disabled={creating} className="rounded-lg shadow-sm">
+        <Button onClick={handleCreate} disabled={creating} className="rounded-lg shadow-xs">
           {creating ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating...</>
+            <><Loader2 className="mr-2 size-4 animate-spin" /> Creating...</>
           ) : (
-            <><Plus className="mr-2 h-4 w-4" /> New Measurement</>
+            <><Plus className="mr-2 size-4" /> New Measurement</>
           )}
         </Button>
       }

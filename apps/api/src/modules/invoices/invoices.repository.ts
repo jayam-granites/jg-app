@@ -1,4 +1,7 @@
+import { Prisma } from '@prisma/client'
+import { formatInvoiceNumber, type InvoiceNumberScope } from '@jg-app/shared'
 import { prisma } from '#/lib/prisma'
+import { INVOICE_NUMBER_LOCK_KEY } from './invoice-number'
 
 const invoiceInclude = {
   customer: { select: { id: true, name: true, mobile: true, address: true, gstNumber: true } },
@@ -30,9 +33,65 @@ const invoiceInclude = {
   },
 } as const
 
+export type InvoiceCreateData = {
+  invoiceNumber: string
+  customerId: number
+  invoiceDate: Date
+  dueDate?: Date
+  invoiceType?: string
+  gstNumber?: string | null
+  isGst?: boolean
+  isHalfGst?: boolean
+  isTaxInclusive?: boolean
+  gstPercent?: number
+  loadingRate?: number
+  loadingAmount?: number
+  receivedAmount?: number
+  balanceAmount?: number
+  paymentMethod?: string
+  accountId?: number | null
+  status?: string
+  transport?: {
+    transportProviderId: number
+    transportDate?: Date
+    vehicleNumber?: string
+    fromLocation?: string
+    toLocation?: string
+    amount: number
+    remarks?: string
+  }
+  discountAmount?: number
+  subtotal?: number
+  taxableAmount?: number
+  cgstAmount?: number
+  sgstAmount?: number
+  igstAmount?: number
+  totalTaxAmount?: number
+  roundOffAmount?: number
+  grandTotal?: number
+  remarks?: string
+  items: {
+    itemType?: string
+    productVariantId?: number
+    description?: string
+    unitId?: number
+    secondaryUnitId?: number
+    qty: number
+    slabCount?: number
+    isLoadingApplicable?: boolean
+    rate: number
+    discountAmount?: number
+    taxPercent?: number
+    taxAmount?: number
+    amount: number
+    remarks?: string
+  }[]
+}
+
 export const invoicesRepository = {
-  async findAll() {
+  async findAll(type?: InvoiceNumberScope) {
     return prisma.invoice.findMany({
+      where: type ? { invoiceType: type } : undefined,
       include: invoiceInclude,
       orderBy: { createdAt: 'desc' },
     })
@@ -44,69 +103,38 @@ export const invoicesRepository = {
 
 
 
-  async findLatestInvoiceNumberByPrefix(prefix: string) {
-    return prisma.invoice.findFirst({
-      where: { invoiceNumber: { startsWith: prefix } },
-      orderBy: { invoiceNumber: 'desc' },
-      select: { invoiceNumber: true },
+  findNumberSequence(scope: InvoiceNumberScope) {
+    return prisma.invoiceNumberSequence.findUnique({ where: { scope } })
+  },
+
+  /**
+   * Atomically reserves the next number for one scope and creates the invoice.
+   * A failed invoice insert rolls back the counter update as well.
+   */
+  async createWithNextNumber(
+    data: Omit<InvoiceCreateData, 'invoiceNumber'>,
+    scope: InvoiceNumberScope,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${INVOICE_NUMBER_LOCK_KEY}))`
+      const sequence = await tx.invoiceNumberSequence.findUnique({ where: { scope } })
+      if (!sequence) throw new Error(`Invoice number sequence '${scope}' is not configured`)
+      const nextSequence = sequence.currentNumber + 1
+      const invoiceNumber = formatInvoiceNumber(sequence.prefix, nextSequence, sequence.paddingDigits)
+      await tx.invoiceNumberSequence.update({
+        where: { scope },
+        data: { currentNumber: nextSequence },
+      })
+      return this.createWithItems({ ...data, invoiceNumber }, tx)
     })
   },
 
-  async createWithItems(data: {
-    invoiceNumber: string
-    customerId: number
-    invoiceDate: Date
-    dueDate?: Date
-    isGst?: boolean
-    isHalfGst?: boolean
-    isTaxInclusive?: boolean
-    gstPercent?: number
-    loadingRate?: number
-    loadingAmount?: number
-    receivedAmount?: number
-    balanceAmount?: number
-    paymentMethod?: string
-    accountId?: number | null
-    status?: string
-    transport?: {
-      transportProviderId: number
-      transportDate?: Date
-      vehicleNumber?: string
-      fromLocation?: string
-      toLocation?: string
-      amount: number
-      remarks?: string
-    }
-    discountAmount?: number
-    subtotal?: number
-    taxableAmount?: number
-    cgstAmount?: number
-    sgstAmount?: number
-    igstAmount?: number
-    totalTaxAmount?: number
-    roundOffAmount?: number
-    grandTotal?: number
-    remarks?: string
-    items: {
-      itemType?: string
-      productVariantId?: number
-      description?: string
-      unitId?: number
-      secondaryUnitId?: number
-      qty: number
-      slabCount?: number
-      isLoadingApplicable?: boolean
-      rate: number
-      discountAmount?: number
-      taxPercent?: number
-      taxAmount?: number
-      amount: number
-      remarks?: string
-    }[]
-  }) {
-    return prisma.invoice.create({
+  async createWithItems(data: InvoiceCreateData, tx: Prisma.TransactionClient = prisma) {
+    return tx.invoice.create({
       data: {
         invoiceNumber: data.invoiceNumber,
+        invoiceType: data.invoiceType ?? 'normal',
+        gstNumber: data.gstNumber ?? null,
         customerId: data.customerId,
         invoiceDate: data.invoiceDate,
         dueDate: data.dueDate ?? null,

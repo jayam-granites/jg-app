@@ -22,28 +22,24 @@ function ErrorPage({ status, title, description, illustration }: ErrorPageProps)
         />
       )}
       {!illustration && (
-        <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
-          <Home className="h-10 w-10 text-muted-foreground" />
+        <div className="mb-4 flex size-20 items-center justify-center rounded-lg bg-muted">
+          <Home className="size-10 text-muted-foreground" />
         </div>
       )}
-      <span className="mb-2 font-mono text-7xl font-bold tracking-tighter text-primary">
+      <span className="mb-2 font-mono text-6xl font-semibold tracking-tighter text-primary">
         {status}
       </span>
-      <h1 className="mb-2 text-2xl font-bold tracking-tight">{title}</h1>
-      <p className="mb-8 max-w-md text-sm text-muted-foreground">{description}</p>
+      <h1 className="mb-2 text-2xl font-semibold tracking-tight">{title}</h1>
+      <p className="mb-8 max-w-md text-sm leading-relaxed text-muted-foreground">{description}</p>
       <div className="flex gap-3">
-        <Button asChild variant="default" className="rounded-lg shadow-sm">
+        <Button asChild variant="default">
           <Link to="/">
-            <Home className="mr-2 h-4 w-4" /> Go to Dashboard
+            <Home className="mr-2 size-4" /> Go to Dashboard
           </Link>
         </Button>
         {status === 500 && (
-          <Button
-            variant="outline"
-            className="rounded-lg"
-            onClick={() => window.location.reload()}
-          >
-            <RefreshCcw className="mr-2 h-4 w-4" /> Try Again
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            <RefreshCcw className="mr-2 size-4" /> Try Again
           </Button>
         )}
       </div>

@@ -101,22 +101,24 @@ enum PurchaseStatus {
   CANCELLED
 }
 
-enum ResourceCategory {
+enum TradeContactType {
   ENGINEER
   BUILDER
   MASTRI
-  PLUMBER
-  ELECTRICIAN
-  LABOR_LOADING
-  OTHER_UTILITY
+}
+
+enum TierGroup {
+  GOLD
+  SILVER
+  BRONZE
 }
 
 enum EnquiryStatus {
-  NEW
-  QUOTED
-  NEGOTIATING
-  WON
-  LOST
+  OPEN
+  FOLLOW_UP_1
+  FOLLOW_UP_2
+  CLOSED_WON
+  CLOSED_LOST
 }
 
 enum Priority {
@@ -293,6 +295,8 @@ model ProductVariant {
 
   sellingPrice Decimal @map("selling_price") @db.Decimal(12, 2)
 
+  gstPercent Decimal? @map("gst_percent") @db.Decimal(5, 2)
+
   isActive Boolean @default(true) @map("is_active")
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -437,6 +441,8 @@ model Supplier {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   purchaseOrders PurchaseOrder[]
+
+  tasks Task[]
 
   @@map("suppliers")
 }
@@ -761,6 +767,7 @@ model Expense {
   allocations ExpenseAllocation[]
 
   @@unique([expenseScheduleId, scheduleOccurrenceDate])
+  @@index([expenseDate, isActive, isPurchaseExpense])
   @@map("expenses")
 }
 
@@ -913,6 +920,8 @@ model Customer {
 
   invoices Invoice[]
 
+  tasks Task[]
+
   @@map("customers")
 }
 
@@ -920,6 +929,12 @@ model Invoice {
   id Int @id @default(autoincrement())
 
   invoiceNumber String @unique @map("invoice_number")
+
+  /// 'normal' | 'gst' — enforced by the invoice_type check constraint.
+  invoiceType String @default("normal") @map("invoice_type")
+
+  /// GSTIN printed on GST bills.
+  gstNumber String? @map("gst_number")
 
   customerId Int @map("customer_id")
 
@@ -991,7 +1006,21 @@ model Invoice {
   payments InvoicePayment[]
 
   @@index([customerId])
+  @@index([invoiceType])
+  @@index([invoiceDate, isActive, status])
   @@map("invoices")
+}
+
+/// One row per independent numbering sequence: 'normal' and 'gst'.
+model InvoiceNumberSequence {
+  /// 'normal' | 'gst' — enforced by the invoice_number_sequences_scope_check constraint.
+  scope         String   @id
+  prefix        String
+  currentNumber Int      @default(0) @map("current_number")
+  paddingDigits Int      @default(3) @map("padding_digits")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("invoice_number_sequences")
 }
 
 model InvoicePayment {
@@ -1106,6 +1135,8 @@ model Broker {
 
   invoiceCommissions InvoiceCommission[]
 
+  tasks Task[]
+
   @@map("brokers")
 }
 
@@ -1161,6 +1192,8 @@ model TransportProvider {
   invoiceTransports InvoiceTransport[]
 
   purchaseTransports PurchaseTransport[]
+
+  tasks Task[]
 
   @@map("transport_providers")
 }
@@ -1364,37 +1397,36 @@ model UpiProfile {
 }
 
 model ResourceContact {
-  id          Int              @id @default(autoincrement())
-  name        String
-  category    ResourceCategory
-  mobile      String?
-  address     String?
-  stdWageRate Decimal?         @map("std_wage_rate") @db.Decimal(10, 2)
-  isAvailable Boolean          @default(true) @map("is_available")
-  notes       String?
-  isActive    Boolean          @default(true) @map("is_active")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  tasks       Task[]
+  id           Int              @id @default(autoincrement())
+  name         String
+  mobile       String
+  contactType  TradeContactType @map("contact_type")
+  tierGroup    TierGroup        @default(BRONZE) @map("tier_group")
+  productNotes String?          @map("product_notes")
+  address      String?
+  isActive     Boolean          @default(true) @map("is_active")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  tasks        Task[]
 
+  @@index([mobile])
+  @@index([contactType])
+  @@index([tierGroup])
   @@map("resource_contacts")
 }
 
 model CustomerEnquiry {
-  id               Int           @id @default(autoincrement())
-  customerName     String        @map("customer_name")
-  mobile           String
-  siteLocation     String?       @map("site_location")
-  materialInterest String        @map("material_interest")
-  sizeOrUnit       String?       @map("size_or_unit")
-  quantity         Decimal?      @db.Decimal(10, 2)
-  quotedPrice      Decimal?      @map("quoted_price") @db.Decimal(12, 2)
-  notes            String?
-  status           EnquiryStatus @default(NEW)
-  isActive         Boolean       @default(true) @map("is_active")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
-  tasks            Task[]
+  id                Int           @id @default(autoincrement())
+  customerName      String        @map("customer_name")
+  mobile            String
+  requirementsNotes String        @map("requirements_notes")
+  status            EnquiryStatus @default(OPEN)
+  followUpCount     Int           @default(0) @map("follow_up_count")
+  closeReason       String?       @map("close_reason")
+  isActive          Boolean       @default(true) @map("is_active")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  tasks             Task[]
 
   @@index([mobile])
   @@index([status])
@@ -1402,23 +1434,57 @@ model CustomerEnquiry {
 }
 
 model Task {
-  id          Int              @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   title       String
   description String?
-  dueDate     DateTime         @map("due_date")
-  priority    Priority         @default(MEDIUM)
-  status      TaskStatus       @default(PENDING)
-  enquiryId   Int?             @map("enquiry_id")
-  resourceId  Int?             @map("resource_id")
-  isActive    Boolean          @default(true) @map("is_active")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  enquiry     CustomerEnquiry? @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
-  resource    ResourceContact? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  dueDate     DateTime           @map("due_date")
+  priority    Priority           @default(MEDIUM)
+  status      TaskStatus         @default(PENDING)
+  enquiryId   Int?               @map("enquiry_id")
+  resourceId  Int?               @map("resource_id")
+  customerId  Int?               @map("customer_id")
+  supplierId  Int?               @map("supplier_id")
+  brokerId    Int?               @map("broker_id")
+  transportId Int?               @map("transport_id")
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  enquiry     CustomerEnquiry?   @relation(fields: [enquiryId], references: [id], onDelete: SetNull)
+  resource    ResourceContact?   @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  customer    Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier    Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  broker      Broker?            @relation(fields: [brokerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  transport   TransportProvider? @relation(fields: [transportId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([dueDate])
   @@index([status])
   @@index([enquiryId])
   @@index([resourceId])
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([brokerId])
+  @@index([transportId])
   @@map("tasks")
+}
+
+model ProductImportJob {
+  id            Int      @id @default(autoincrement())
+  jobId         String   @unique @map("job_id")
+  status        String   @default("queued")
+  phase         String?
+  progress      Int      @default(0)
+  totalRows     Int      @default(0) @map("total_rows")
+  processedRows Int      @default(0) @map("processed_rows")
+  fileName      String   @map("file_name")
+  fileBytes     Bytes?   @map("file_bytes")
+  requestedById String?  @map("requested_by_id")
+  preview       Json?
+  result        Json?
+  error         Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("product_import_jobs")
 }

@@ -1,13 +1,15 @@
-import type {
-  CreateResourceContactFormData,
-  UpdateResourceContactFormData,
-} from '@jg-app/validators'
+import { capitalizeName } from '@jg-app/shared'
 import { NotFoundError } from '#/lib/errors'
-import { resourcesRepository } from './resources.repository'
+import {
+  resourcesRepository,
+  type CreateResourceData,
+  type ResourceFilters,
+  type UpdateResourceData,
+} from './resources.repository'
 
 export const resourcesService = {
-  getAll() {
-    return resourcesRepository.findAll()
+  getAll(filters: ResourceFilters = {}) {
+    return resourcesRepository.findAll(filters)
   },
 
   async getById(id: number) {
@@ -16,13 +18,19 @@ export const resourcesService = {
     return resource
   },
 
-  create(data: CreateResourceContactFormData) {
-    return resourcesRepository.create(data)
+  create(data: CreateResourceData) {
+    return resourcesRepository.create({
+      ...data,
+      name: capitalizeName(data.name),
+    })
   },
 
-  async update(id: number, data: UpdateResourceContactFormData) {
+  async update(id: number, data: UpdateResourceData) {
     await this.getById(id)
-    return resourcesRepository.update(id, data)
+    return resourcesRepository.update(id, {
+      ...data,
+      ...(data.name !== undefined ? { name: capitalizeName(data.name) } : {}),
+    })
   },
 
   async archive(id: number) {

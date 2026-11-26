@@ -1,6 +1,6 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, MoreHorizontal, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+import { ArrowLeft, MoreHorizontal, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useInventoryBatch, useCreateInventorySlabs, useDeleteInventorySlab, useUpdateInventorySlab } from '../hooks/use-inventory'
-import { formatDateTime } from '@/lib/date'
+import { formatDate } from '@/lib/date'
+import { PageLoading } from '@/shared/components/page-loading'
 
 function calcSqft(l: number, w: number) {
   if (l > 0 && w > 0) return (l * w) / 144
@@ -197,19 +198,13 @@ export function InventoryBatchPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
+  if (isLoading) return <PageLoading />
 
   if (!batch) {
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/inventory' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <p className="text-muted-foreground">Inventory batch not found.</p>
       </div>
@@ -220,12 +215,12 @@ export function InventoryBatchPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate({ to: '/inventory' })}>
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
         </Button>
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{batch.productVariant?.product?.name}</h1>
-            <Badge variant="outline" className="rounded-full border px-2.5 py-0.5 text-[11px] font-medium">
+            <h1 className="text-2xl font-semibold tracking-tight">{batch.productVariant?.product?.name}</h1>
+            <Badge variant="outline" className="rounded-full border px-2.5 py-0.5 text-xs font-medium">
               {batch.batchNo}
             </Badge>
           </div>
@@ -247,7 +242,7 @@ export function InventoryBatchPage() {
             <CardTitle className="text-sm font-semibold text-muted-foreground">Available</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-green-600">{Number(batch.availableQty)}</p>
+            <p className="text-2xl font-bold text-success">{Number(batch.availableQty)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -293,7 +288,7 @@ export function InventoryBatchPage() {
             <p className="text-lg font-medium">{batch.purchaseReceiptItem?.purchaseReceipt?.receiptNumber ?? '-'}</p>
             <p className="text-xs text-muted-foreground">
               {batch.purchaseReceiptItem?.purchaseReceipt?.receivedDate
-                ? formatDateTime(batch.purchaseReceiptItem.purchaseReceipt.receivedDate)
+                ? formatDate(batch.purchaseReceiptItem.purchaseReceipt.receivedDate)
                 : ''}
             </p>
           </CardContent>
@@ -305,7 +300,7 @@ export function InventoryBatchPage() {
           <CardTitle className="text-lg font-semibold">Slabs ({batch.slabs?.length ?? 0})</CardTitle>
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" variant="outline" onClick={startAddSlab} disabled={createSlabs.isPending}>
-              <Plus className="mr-1 h-4 w-4" /> Add Slab
+              <Plus className="mr-1 size-4" /> Add Slab
             </Button>
             {newSlabs.length > 0 && (
               <Button
@@ -478,7 +473,7 @@ export function InventoryBatchPage() {
                       <td className="px-4 py-2 text-center">
                         <div className="flex items-center justify-center gap-2">
                           {slab.isCrack && (
-                            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200 rounded-full text-[10px] px-2">Cracks</Badge>
+                            <Badge variant="outline" className="bg-warning/12 text-warning border-warning/30 rounded-full text-xs px-2">Cracks</Badge>
                           )}
                           <Button type="button" size="sm" variant="outline" onClick={() => openCrackDialog(slab)}>
                             {slab.isCrack ? 'Edit cracks' : 'Mark as cracks'}
@@ -487,11 +482,11 @@ export function InventoryBatchPage() {
                       </td>
                       <td className="px-4 py-2 text-center">
                         {slab.isBroken ? (
-                          <Badge variant="outline" className="rounded-full text-[10px] px-2">Damaged</Badge>
+                          <Badge variant="outline" className="rounded-full text-xs px-2">Damaged</Badge>
                         ) : slab.isSold ? (
-                          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200 rounded-full text-[10px] px-2">Sold</Badge>
+                          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 rounded-full text-xs px-2">Sold</Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 rounded-full text-[10px] px-2">Available</Badge>
+                          <Badge variant="outline" className="bg-success/12 text-success border-success/30 rounded-full text-xs px-2">Available</Badge>
                         )}
                       </td>
                       <td className="px-2 py-2 text-right">

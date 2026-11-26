@@ -27,7 +27,7 @@ export function CustomersPage() {
       description="Manage customers"
       action={
         <Button size="sm" className="rounded-lg" onClick={() => navigate({ to: '/customers/create' })}>
-          <Plus className="mr-1.5 h-4 w-4" /> New Customer
+          <Plus className="mr-1.5 size-4" /> New Customer
         </Button>
       }
     >
